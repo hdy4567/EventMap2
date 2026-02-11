@@ -6,29 +6,41 @@
     <title>EventMap Pro: Korea & Japan</title>
     
     <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    colors: {
-
-                        
-                        'dark-bg': '#000000',  // 더 어두운 블랙
-                        'dark-surface': '#131314',  // 사이드바, 구분 영역 (배경보다 아주 살짝 밝음)
-                        'dark-card': '#202124',       // 검색창, 카드, 모달 (가장 밝은 회색)
-                        
-                        'primary-500': '#8ab4f8',
-                        'primary-glow': '#174ea6', // 지역 강조용 노란색
-                    },
-                    fontFamily: {
-                        sans: ['Inter', 'Malgun Gothic', 'Dotum', 'sans-serif'],
-                    },
-                }
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+    tailwind.config = {
+        darkMode: 'class',
+        theme: {
+            extend: {
+                colors: {
+                    // 구글 포토 딥 다크 테마 (OLED Black + Material Dark Gray)
+                    
+                    // 1. 배경: 완전한 블랙 (지도 영역, 메인 배경)
+                    'dark-bg': '#000000', 
+                    
+                    // 2. 구분 영역: 아주 깊은 회색 (사이드바, 헤더, 내비게이션)
+                    // 배경(#000000)과 미세하게 분리되어 깊이감을 줌
+                    'dark-surface': '#131314', 
+                    
+                    // 3. 카드/입력창: 구글 머티리얼 다크 그레이 (가장 밝은 면)
+                    // 사용자가 상호작용하는 검색창, 리스트 아이템, 팝업 등에 사용
+                    'dark-card': '#202124',
+                    
+                    // 4. 포인트 컬러: 구글 블루 (Google Blue 500)
+                    // 텍스트 강조, 아이콘, 선택된 상태
+                    'primary-500': '#8ab4f8',
+                    
+                    // 5. 강조 효과: 딥 블루 (호버, 글로우 효과용)
+                    // primary-500보다 어둡고 진한 파란색
+                    'primary-glow': '#174ea6', 
+                },
+                fontFamily: {
+                    sans: ['Inter', 'Malgun Gothic', 'Dotum', 'sans-serif'],
+                },
             }
         }
-    </script>
+    }
+</script>
 
     <!-- Leaflet CSS & JS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -616,6 +628,7 @@
     </script>
 </body>
 </html>
+
 
 
 
