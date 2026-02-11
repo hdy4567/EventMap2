@@ -5,20 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>EventMap2 - Global Festival Map</title>
     
-    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    
-    <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    
-    <!-- Leaflet MarkerCluster CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.Default.css" />
 
     <style>
         body, html { margin: 0; padding: 0; height: 100%; overflow: hidden; background-color: #000; }
         
-        /* #upgrade 다크 모드: 타일만 반전시키고 마커/UI는 보존 */
+        /* #upgrade 다크 모드: 타일만 반전, UI는 보존 */
         #map { 
             width: 100%; 
             height: 100%; 
@@ -26,13 +21,16 @@
             z-index: 1;
         }
         
-        /* 지도 타일만 반전 (다크모드 효과) */
         .leaflet-tile-pane {
             filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%);
         }
-
-        /* 팝업 및 마커는 반전되지 않도록 제외 (필요시 역반전) 
-           Leaflet 기본 구조상 pane이 분리되어 있어 tile-pane만 필터 걸면 마커는 영향 안 받음 */
+        
+        /* #upgrade UI 반전 방지 강화 */
+        .leaflet-control-container, 
+        .leaflet-popup-content-wrapper, 
+        .leaflet-popup-tip {
+            filter: none !important;
+        }
 
         /* #upgrade 드래그 선택 박스 */
         .selection-box {
@@ -44,7 +42,7 @@
             display: none;
         }
 
-        /* #upgrade 지역 발광 효과 애니메이션 */
+        /* #upgrade 지역 발광 효과 */
         @keyframes pulse-glow {
             0% { stroke-opacity: 0.4; stroke-width: 2; fill-opacity: 0.1; }
             50% { stroke-opacity: 1.0; stroke-width: 5; fill-opacity: 0.3; }
@@ -67,14 +65,13 @@
             transform: translateY(0);
         }
 
-        /* 클러스터 커스텀 색상 */
+        /* #upgrade 클러스터 색상 (10개 이상 빨강) */
         .marker-cluster-small { background-color: rgba(110, 204, 57, 0.6); }
         .marker-cluster-small div { background-color: rgba(110, 204, 57, 0.6); }
 
         .marker-cluster-medium { background-color: rgba(240, 194, 12, 0.6); }
         .marker-cluster-medium div { background-color: rgba(240, 194, 12, 0.6); }
 
-        /* #upgrade 10개 이상 빨강 (고밀도) */
         .cluster-high-density {
             background-color: rgba(255, 59, 48, 0.6) !important;
         }
@@ -84,26 +81,25 @@
             font-weight: bold;
         }
         
-        /* 스크롤바 숨김 */
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
-        /* 선택된 마커 하이라이트 */
+        /* #upgrade 선택된 마커 하이라이트 */
         .marker-selected {
-            filter: drop-shadow(0 0 8px #2196F3) brightness(1.2);
-            border: 3px solid #2196F3;
+            filter: drop-shadow(0 0 8px #2196F3) brightness(1.2) !important;
+            border: 3px solid #2196F3 !important;
             border-radius: 50%;
         }
     </style>
 </head>
 <body class="font-sans text-gray-100">
 
-    <!-- #upgrade UI 1: 네이버 검색창 & 국가 탭 & 태그 -->
+    <!-- #upgrade UI 3단 구조 -->
     <div class="absolute top-4 left-1/2 transform -translate-x-1/2 w-[90%] max-w-md z-50 flex flex-col gap-2 pointer-events-none">
         
-        <!-- 1. 네이버 실제 검색 연동 -->
+        <!-- 1단: 네이버 검색창 -->
         <div class="pointer-events-auto bg-gray-900/90 backdrop-blur-md rounded-xl shadow-2xl border border-gray-700 p-2">
-            <form action="https://search.naver.com/search.naver" method="GET" target="_blank" class="flex gap-2">
+            <form action="https://search.naver.com/search.naver" method="GET" target="_blank" class="flex gap-2" onsubmit="saveRecentSearch(this.query.value)">
                 <input type="text" name="query" placeholder="네이버 검색..." 
                        class="w-full bg-gray-800 text-white px-4 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500 transition-all">
                 <button type="submit" class="bg-green-600 hover:bg-green-500 text-white px-3 py-2 rounded-lg text-sm font-bold">
@@ -112,45 +108,42 @@
             </form>
         </div>
 
-        <!-- 2. 국가 탭 (KR/JP/Memo) -->
+        <!-- 2단: 국가 탭 (KR/JP/Memo) -->
         <div class="pointer-events-auto flex justify-center gap-2">
             <button onclick="setCountry('Korea')" id="btn-kr" class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-1.5 rounded-full text-xs font-bold shadow-lg transition-all ring-2 ring-white/20">🇰🇷 한국</button>
             <button onclick="setCountry('Japan')" id="btn-jp" class="bg-gray-700 hover:bg-red-500 text-white px-4 py-1.5 rounded-full text-xs font-bold shadow-lg transition-all">🇯🇵 일본</button>
             <button onclick="toggleMemoMode()" class="bg-gray-700 hover:bg-yellow-500 text-white px-4 py-1.5 rounded-full text-xs font-bold shadow-lg transition-all">📝 메모</button>
         </div>
 
-        <!-- 3. 지역/태그 필터 (가로 스크롤) -->
-        <div class="pointer-events-auto overflow-x-auto no-scrollbar whitespace-nowrap py-2 px-1 mask-linear">
-            <div id="tagContainer" class="flex gap-2 justify-center min-w-max px-4">
-                <!-- JS로 동적 생성됨 -->
-            </div>
+        <!-- 3단: 지역 태그 + 테마 필터 -->
+        <div class="pointer-events-auto overflow-x-auto no-scrollbar whitespace-nowrap py-2 px-1">
+            <div id="tagContainer" class="flex gap-2 justify-start min-w-max px-4"></div>
         </div>
         
-        <!-- 최근 검색어 (로컬스토리지) -->
+        <!-- #upgrade 최근 검색어 표시 -->
         <div id="recentSearch" class="pointer-events-auto hidden bg-gray-900/90 backdrop-blur rounded-lg p-2 mt-1 text-xs text-gray-300">
             <span class="font-bold text-gray-500 block mb-1">최근 검색</span>
             <div id="recentList" class="flex gap-2 flex-wrap"></div>
         </div>
     </div>
 
-    <!-- 맵 컨테이너 -->
     <div id="map"></div>
     <div id="selectionBox" class="selection-box"></div>
 
-    <!-- 하단 상세 시트 (크기 축소 및 디자인 개선) -->
-    <div id="detailSheet" class="fixed bottom-0 left-0 w-full bg-gray-900 rounded-t-2xl shadow-[0_-5px_20px_rgba(0,0,0,0.5)] z-50 p-5 h-[35vh] flex flex-col gap-4 border-t border-gray-700 text-white">
+    <!-- #upgrade 하단 시트 30% 크기 감소 (35vh → 24.5vh) -->
+    <div id="detailSheet" class="fixed bottom-0 left-0 w-full bg-gray-900 rounded-t-2xl shadow-[0_-5px_20px_rgba(0,0,0,0.5)] z-50 p-5 h-[24.5vh] flex flex-col gap-4 border-t border-gray-700 text-white">
         <button id="closeButton" class="absolute top-3 right-4 text-gray-400 hover:text-white text-xl">✕</button>
         
         <div class="flex gap-4 h-full">
-            <!-- 이미지 비율 유지 object-cover -->
-            <img id="sheetImage" src="" alt="Event" class="w-1/3 h-full rounded-xl object-cover border border-gray-600 bg-gray-800">
+            <!-- #upgrade 이미지 비율 1/3 → 1/4로 감소 -->
+            <img id="sheetImage" src="" alt="Event" class="w-1/4 h-full rounded-xl object-cover border border-gray-600 bg-gray-800">
             
             <div class="flex-1 overflow-y-auto pr-2">
                 <div class="flex justify-between items-start mb-2">
-                    <h2 id="sheetTitle" class="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-400">이벤트 제목</h2>
+                    <h2 id="sheetTitle" class="text-lg font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-400">이벤트 제목</h2>
                     <span id="sheetRegion" class="text-xs bg-gray-700 px-2 py-1 rounded text-gray-300">지역</span>
                 </div>
-                <p id="sheetSummary" class="text-sm text-gray-300 mb-3 leading-relaxed">이벤트 요약 내용이 여기에 들어갑니다.</p>
+                <p id="sheetSummary" class="text-sm text-gray-300 mb-3 leading-relaxed">이벤트 요약</p>
                 
                 <div class="text-xs space-y-1 text-gray-400">
                     <p>🎤 <span class="text-gray-200" id="sheetCeleb">초청 게스트</span></p>
@@ -161,69 +154,102 @@
         </div>
     </div>
 
-    <!-- Leaflet JS -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
 
     <script>
-        // --- 전역 변수 ---
-        let map;
-        let markersCluster;
-        let currentCountry = 'Korea'; // 'Korea' | 'Japan'
+        let map, markersCluster;
+        let currentCountry = 'Korea';
         let currentGlowLayer = null;
         let isSelecting = false;
         let selectionStart = null;
         let selectedMarkers = new Set();
+        let markerBrightnessValue = 1.0;
         
         const selectionBox = document.getElementById('selectionBox');
         
-        // #upgrade 지역 경계 파라미터 (단순 사각형 Bounds 예시)
-        // 실제로는 더 정교한 폴리곤이 좋으나, 요청대로 파라미터화된 Bounds 사용
+        // #upgrade 지역 경계 파라미터 확장
         const regionBoundaryParams = {
             '서울': [[37.413294, 126.734086], [37.715133, 127.269311]],
             '경기': [[36.893960, 126.376282], [38.284422, 127.854233]],
+            '강원': [[37.024128, 127.267563], [38.612895, 129.403067]],
+            '충남': [[35.968674, 126.003849], [36.897770, 127.477394]],
+            '충북': [[36.196688, 127.286377], [37.206036, 128.489090]],
+            '전북': [[35.227345, 126.244156], [36.176777, 127.635040]],
+            '전남': [[33.993872, 125.686073], [35.441993, 127.673340]],
+            '경북': [[35.427315, 128.013367], [37.425194, 129.612488]],
+            '경남': [[34.515808, 127.569763], [35.730469, 129.153900]],
             '부산': [[34.879908, 128.738436], [35.395936, 129.372819]],
             '제주': [[33.112293, 126.162788], [34.004925, 126.980667]],
             '도쿄': [[35.501167, 138.942468], [35.898643, 139.919011]],
             '오사카': [[34.283177, 135.074447], [34.977464, 135.734685]],
-            '홋카이도': [[41.210909, 139.333332], [45.557201, 148.887208]]
+            '교토': [[34.808868, 135.353409], [35.367992, 135.947113]],
+            '후쿠오카': [[33.406362, 130.064697], [33.718277, 130.659790]],
+            '홋카이도': [[41.210909, 139.333332], [45.557201, 148.887208]],
+            '오키나와': [[24.045416, 122.747192], [28.481293, 131.341553]],
+            '나고야': [[34.839081, 136.543579], [35.332012, 137.139587]]
         };
 
-        // #upgrade 데이터: 한국(24) + 일본(13) 가상 데이터 (일부 예시)
+        // #upgrade 실제 API 연동 준비된 가상 데이터 (37개)
         const mockEvents = [
-            // --- 한국 (KR) ---
+            // --- 한국 (24개) ---
             { id: 1, title: '서울 불꽃축제', region: '서울', lat: 37.527, lng: 126.933, country: 'Korea', type: '문화', celeb: '불꽃디자이너 10인', img: 'https://images.unsplash.com/photo-1514525253440-b393452e2729', desc: '여의도 한강공원에서 펼쳐지는 세계적인 불꽃축제.' },
             { id: 2, title: '부산 국제영화제', region: '부산', lat: 35.171, lng: 129.127, country: 'Korea', type: '문화', celeb: '유명 배우 다수', img: 'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba', desc: '아시아 최대의 영화 축제.' },
             { id: 3, title: '보령 머드축제', region: '충남', lat: 36.312, lng: 126.514, country: 'Korea', type: '음악', celeb: 'K-POP 아이돌', img: 'https://images.unsplash.com/photo-1533174072545-e8d4aa97edf9', desc: '세계인이 즐기는 대한민국 대표 여름 축제.' },
             { id: 4, title: '전주 비빔밥축제', region: '전북', lat: 35.815, lng: 127.153, country: 'Korea', type: '음식', celeb: '유명 셰프', img: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd', desc: '맛과 멋이 있는 전주 대표 미식 축제.' },
             { id: 5, title: '진해 군항제', region: '경남', lat: 35.148, lng: 128.663, country: 'Korea', type: '문화', celeb: '군악대', img: 'https://images.unsplash.com/photo-1490750967868-58cb75069ed6', desc: '전국 최대 규모의 벚꽃 축제.' },
+            { id: 6, title: '광주 비엔날레', region: '전남', lat: 35.160, lng: 126.851, country: 'Korea', type: '문화', celeb: '국제 작가', img: 'https://images.unsplash.com/photo-1499781350541-7783f6c6a0c8', desc: '아시아 최초 국제 현대미술 전시회.' },
+            { id: 7, title: '춘천 국제마임축제', region: '강원', lat: 37.881, lng: 127.730, country: 'Korea', type: '문화', celeb: '세계 마임 공연팀', img: 'https://images.unsplash.com/photo-1507676184212-d03ab07a01bf', desc: '말 없이 소통하는 공연 예술의 향연.' },
+            { id: 8, title: '안동 국제탈춤페스티벌', region: '경북', lat: 36.568, lng: 128.729, country: 'Korea', type: '문화', celeb: '전통 탈춤 공연단', img: 'https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3', desc: '한국 전통 가면극을 세계에 알리는 축제.' },
+            { id: 9, title: '대전 사이언스 페스티벌', region: '충북', lat: 36.351, lng: 127.385, country: 'Korea', type: '문화', celeb: '과학자 강연', img: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa', desc: '과학과 기술의 만남.' },
+            { id: 10, title: '제주 들불축제', region: '제주', lat: 33.365, lng: 126.533, country: 'Korea', type: '문화', celeb: '전통 공연단', img: 'https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05', desc: '제주의 봄을 여는 불의 향연.' },
             
-            // --- 일본 (JP) ---
+            // 추가 한국 데이터 (14개 더)
+            { id: 11, title: '수원 화성문화제', region: '경기', lat: 37.286, lng: 127.007, country: 'Korea', type: '문화', celeb: '전통 국악단', img: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64', desc: '유네스코 세계문화유산 수원화성의 역사를 재현.' },
+            { id: 12, title: '인천 펜타포트 록 페스티벌', region: '경기', lat: 37.456, lng: 126.705, country: 'Korea', type: '음악', celeb: '국내외 록 밴드', img: 'https://images.unsplash.com/photo-1506157786151-b8491531f063', desc: '한국 최대 록 음악 축제.' },
+            { id: 13, title: '강릉 커피 페스티벌', region: '강원', lat: 37.752, lng: 128.876, country: 'Korea', type: '음식', celeb: '바리스타 챔피언', img: 'https://images.unsplash.com/photo-1509042239860-f550ce710b93', desc: '커피의 도시 강릉에서 열리는 커피 축제.' },
+            { id: 14, title: '평창 송어 축제', region: '강원', lat: 37.370, lng: 128.390, country: 'Korea', type: '문화', celeb: '겨울 레저 전문가', img: 'https://images.unsplash.com/photo-1519904981063-b0cf448d479e', desc: '얼음 위에서 즐기는 겨울 축제.' },
+            { id: 15, title: '청주 국제공예비엔날레', region: '충북', lat: 36.642, lng: 127.489, country: 'Korea', type: '문화', celeb: '공예 작가', img: 'https://images.unsplash.com/photo-1452860606245-08befc0ff44b', desc: '세계 공예의 흐름을 한눈에.' },
+            { id: 16, title: '포항 국제불빛축제', region: '경북', lat: 36.019, lng: 129.343, country: 'Korea', type: '문화', celeb: '불빛 예술가', img: 'https://images.unsplash.com/photo-1496568816309-51d7c20e3b21', desc: '빛으로 수놓는 포항의 밤.' },
+            { id: 17, title: '통영 국제음악제', region: '경남', lat: 34.854, lng: 128.433, country: 'Korea', type: '음악', celeb: '세계 음악가', img: 'https://images.unsplash.com/photo-1465847899084-d164df4dedc6', desc: '음악의 도시 통영에서 열리는 클래식 향연.' },
+            { id: 18, title: '고성 공룡 세계 엑스포', region: '경남', lat: 34.973, lng: 128.322, country: 'Korea', type: '문화', celeb: '고생물학자', img: 'https://images.unsplash.com/photo-1577896851231-70ef18881754', desc: '공룡 발자국 화석의 고장에서 펼쳐지는 공룡 축제.' },
+            { id: 19, title: '군산 시간여행축제', region: '전북', lat: 35.968, lng: 126.736, country: 'Korea', type: '문화', celeb: '역사 재현 배우', img: 'https://images.unsplash.com/photo-1464746133101-a2c3f88e0dd9', desc: '근대 역사의 흔적을 따라 떠나는 여행.' },
+            { id: 20, title: '여수 밤바다 축제', region: '전남', lat: 34.760, lng: 127.662, country: 'Korea', type: '문화', celeb: 'K-POP 가수', img: 'https://images.unsplash.com/photo-1543722530-d2c3201371e7', desc: '여수 밤바다를 수놓는 불빛과 음악.' },
+            { id: 21, title: '담양 죽녹원 대나무 축제', region: '전남', lat: 35.320, lng: 126.988, country: 'Korea', type: '문화', celeb: '대금 연주자', img: 'https://images.unsplash.com/photo-1520250497591-112f2f40a3f4', desc: '푸른 대숲에서 즐기는 힐링 축제.' },
+            { id: 22, title: '서울 재즈 페스티벌', region: '서울', lat: 37.520, lng: 127.047, country: 'Korea', type: '음악', celeb: '세계 재즈 뮤지션', img: 'https://images.unsplash.com/photo-1511735111819-9a3f7709049c', desc: '올림픽공원에서 열리는 재즈의 향연.' },
+            { id: 23, title: '경주 벚꽃 마라톤', region: '경북', lat: 35.856, lng: 129.225, country: 'Korea', type: '문화', celeb: '마라톤 선수', img: 'https://images.unsplash.com/photo-1502224562085-639556652f33', desc: '벚꽃이 흩날리는 신라 역사의 길을 달린다.' },
+            { id: 24, title: '해운대 모래 축제', region: '부산', lat: 35.158, lng: 129.160, country: 'Korea', type: '문화', celeb: '모래 조각가', img: 'https://images.unsplash.com/photo-1516815231560-8f41ec531527', desc: '모래로 만드는 예술 작품의 향연.' },
+            
+            // --- 일본 (13개) ---
             { id: 101, title: '기온 마츠리', region: '교토', lat: 35.003, lng: 135.768, country: 'Japan', type: '문화', celeb: '전통 계승자', img: 'https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e', desc: '교토의 여름을 알리는 일본 3대 마츠리.' },
             { id: 102, title: '스미다가와 불꽃놀이', region: '도쿄', lat: 35.710, lng: 139.800, country: 'Japan', type: '문화', celeb: '불꽃 장인', img: 'https://images.unsplash.com/photo-1506869640319-fe1a24fd76dc', desc: '도쿄에서 가장 오래되고 유명한 불꽃놀이 대회.' },
             { id: 103, title: '삿포로 눈축제', region: '홋카이도', lat: 43.061, lng: 141.354, country: 'Japan', type: '문화', celeb: '조각가', img: 'https://images.unsplash.com/photo-1483921020237-2ff51e8e4b22', desc: '세계 3대 축제 중 하나, 거대한 눈 조각 전시.' },
-            { id: 104, title: '텐진 마츠리', region: '오사카', lat: 34.696, lng: 135.519, country: 'Japan', type: '문화', celeb: '오사카 시민', img: 'https://images.unsplash.com/photo-1542051841857-5f90071e7989', desc: '천년 이상의 역사를 가진 오사카의 대표 축제.' }
+            { id: 104, title: '텐진 마츠리', region: '오사카', lat: 34.696, lng: 135.519, country: 'Japan', type: '문화', celeb: '오사카 시민', img: 'https://images.unsplash.com/photo-1542051841857-5f90071e7989', desc: '천년 이상의 역사를 가진 오사카의 대표 축제.' },
+            { id: 105, title: '아오모리 네부타 마츠리', region: '홋카이도', lat: 40.824, lng: 140.740, country: 'Japan', type: '문화', celeb: '네부타 제작자', img: 'https://images.unsplash.com/photo-1480796927426-f609979314bd', desc: '거대한 등불 인형이 행진하는 여름 축제.' },
+            { id: 106, title: '나고야 아츠타 마츠리', region: '나고야', lat: 35.127, lng: 136.907, country: 'Japan', type: '문화', celeb: '신사 신관', img: 'https://images.unsplash.com/photo-1528164344705-47542687000d', desc: '아츠타 신궁에서 열리는 전통 축제.' },
+            { id: 107, title: '후쿠오카 하카타 기온 야마카사', region: '후쿠오카', lat: 33.590, lng: 130.402, country: 'Japan', type: '문화', celeb: '야마카사 운반자', img: 'https://images.unsplash.com/photo-1554797589-7241bb691973', desc: '거대한 수레를 끌고 달리는 역동적인 축제.' },
+            { id: 108, title: '오키나와 에이사 마츠리', region: '오키나와', lat: 26.212, lng: 127.679, country: 'Japan', type: '음악', celeb: '에이사 댄서', img: 'https://images.unsplash.com/photo-1519904981063-b0cf448d479e', desc: '오키나와 전통 춤과 북 공연.' },
+            { id: 109, title: '도쿄 벚꽃 축제', region: '도쿄', lat: 35.685, lng: 139.752, country: 'Japan', type: '문화', celeb: '하나미 전문가', img: 'https://images.unsplash.com/photo-1522383225653-ed111181a951', desc: '우에노 공원에서 즐기는 벚꽃 축제.' },
+            { id: 110, title: '교토 아오이 마츠리', region: '교토', lat: 35.039, lng: 135.780, country: 'Japan', type: '문화', celeb: '귀족 행렬단', img: 'https://images.unsplash.com/photo-1480796927426-f609979314bd', desc: '헤이안 시대 귀족 의상을 재현한 행렬.' },
+            { id: 111, title: '오사카 가이유칸 조명 축제', region: '오사카', lat: 34.654, lng: 135.428, country: 'Japan', type: '문화', celeb: '조명 디자이너', img: 'https://images.unsplash.com/photo-1478436127897-769e1b3f0f36', desc: '수족관과 함께 즐기는 빛의 축제.' },
+            { id: 112, title: '후쿠오카 모츠나베 축제', region: '후쿠오카', lat: 33.590, lng: 130.402, country: 'Japan', type: '음식', celeb: '요리사', img: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd', desc: '규슈 대표 음식 모츠나베를 맛보는 축제.' },
+            { id: 113, title: '홋카이도 라벤더 축제', region: '홋카이도', lat: 43.676, lng: 142.367, country: 'Japan', type: '문화', celeb: '농부', img: 'https://images.unsplash.com/photo-1464820453369-31d2c0b651af', desc: '보라색 라벤더 밭이 펼쳐지는 여름 축제.' }
         ];
 
-        // 1. window.onload 초기화
         window.onload = function() {
             initializeMap();
             loadTags();
             setupEventListeners();
+            loadRecentSearches();
         };
 
         function initializeMap() {
-            // 지도 초기 좌표 (한국)
-            map = L.map('map', {
-                zoomControl: false // 줌 컨트롤 위치 변경 등을 위해 일단 끔
-            }).setView([35.9, 127.5], 7);
+            map = L.map('map', { zoomControl: false }).setView([35.9, 127.5], 7);
 
-            // OpenStreetMap 타일 (다크모드 필터 적용됨)
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 attribution: '&copy; OpenStreetMap contributors'
             }).addTo(map);
 
-            // 클러스터 그룹 초기화 (#upgrade 커스텀 아이콘 로직)
             markersCluster = L.markerClusterGroup({
                 iconCreateFunction: function(cluster) {
                     var childCount = cluster.getChildCount();
@@ -236,7 +262,7 @@
                         c += 'medium';
                     } else {
                         c += 'large';
-                        densityClass = 'cluster-high-density'; // 10개 이상 빨강
+                        densityClass = 'cluster-high-density';
                     }
 
                     return new L.DivIcon({ 
@@ -251,7 +277,6 @@
             loadEventMarkers();
         }
 
-        // #upgrade 데이터 로드 및 마커 생성
         function loadEventMarkers() {
             markersCluster.clearLayers();
             
@@ -260,7 +285,7 @@
             filteredEvents.forEach(event => {
                 const markerIcon = L.divIcon({
                     className: 'custom-pin',
-                    html: `<div class="w-10 h-10 rounded-full border-2 border-white overflow-hidden shadow-lg bg-gray-800 transition-transform hover:scale-110" data-id="${event.id}">
+                    html: `<div class="w-10 h-10 rounded-full border-2 border-white overflow-hidden shadow-lg bg-gray-800 transition-transform hover:scale-110" data-id="${event.id}" style="filter: brightness(${markerBrightnessValue});">
                              <img src="${event.img}" class="w-full h-full object-cover">
                            </div>`,
                     iconSize: [40, 40],
@@ -268,8 +293,6 @@
                 });
 
                 const marker = L.marker([event.lat, event.lng], { icon: markerIcon });
-                
-                // 마커 객체에 데이터 바인딩
                 marker.eventData = event;
 
                 marker.on('click', () => {
@@ -279,9 +302,8 @@
                 markersCluster.addLayer(marker);
             });
             
-            // 국가 변경 시 지도 중심 이동
             if(currentCountry === 'Korea') map.panTo([35.9, 127.5]);
-            else map.panTo([36.2048, 138.2529]); // 일본 중심
+            else map.panTo([36.2048, 138.2529]);
         }
 
         function setCountry(country) {
@@ -295,10 +317,10 @@
                 "bg-gray-700 hover:bg-red-500 text-white px-4 py-1.5 rounded-full text-xs font-bold shadow-lg";
             
             loadEventMarkers();
-            loadTags(); // 국가별 태그 갱신
+            loadTags();
         }
 
-        // #upgrade 동적 태그 생성
+        // #upgrade 테마 필터 추가 + 지역 태그
         function loadTags() {
             const container = document.getElementById('tagContainer');
             container.innerHTML = '';
@@ -307,6 +329,7 @@
                 ? ['전체', '서울', '경기', '강원', '충남', '충북', '전북', '전남', '경북', '경남', '부산', '제주']
                 : ['전체', '도쿄', '오사카', '교토', '후쿠오카', '홋카이도', '오키나와', '나고야'];
 
+            // 지역 버튼
             regions.forEach(region => {
                 const btn = document.createElement('button');
                 btn.className = "bg-gray-800/80 hover:bg-gray-700 border border-gray-600 text-gray-300 px-3 py-1 rounded-full text-xs transition-all hover:text-white hover:border-white";
@@ -314,29 +337,41 @@
                 btn.onclick = () => filterByRegion(region);
                 container.appendChild(btn);
             });
+            
+            // 구분선
+            const divider = document.createElement('span');
+            divider.className = "text-gray-600 mx-2";
+            divider.innerText = '|';
+            container.appendChild(divider);
+            
+            // #upgrade 테마 필터 버튼
+            const themes = ['문화', '음식', '음악'];
+            themes.forEach(theme => {
+                const btn = document.createElement('button');
+                btn.className = "bg-purple-800/80 hover:bg-purple-700 border border-purple-600 text-purple-300 px-3 py-1 rounded-full text-xs transition-all hover:text-white hover:border-white";
+                btn.innerText = theme;
+                btn.onclick = () => filterByTheme(theme);
+                container.appendChild(btn);
+            });
         }
 
-        // #upgrade 지역 필터 및 발광 효과
         function filterByRegion(region) {
-            // 발광 효과 초기화
             if (currentGlowLayer) {
                 map.removeLayer(currentGlowLayer);
                 currentGlowLayer = null;
             }
 
             if (region === '전체') {
-                loadEventMarkers(); // 필터 해제
+                loadEventMarkers();
                 return;
             }
 
-            // 마커 필터링 (간단 구현)
             markersCluster.clearLayers();
             const filtered = mockEvents.filter(e => e.country === currentCountry && e.region === region);
             filtered.forEach(event => {
-                // ...마커 생성 로직 중복 생략 (실제론 재사용 함수 호출 권장)...
-                 const markerIcon = L.divIcon({
+                const markerIcon = L.divIcon({
                     className: 'custom-pin',
-                    html: `<div class="w-10 h-10 rounded-full border-2 border-white overflow-hidden shadow-lg bg-gray-800" data-id="${event.id}">
+                    html: `<div class="w-10 h-10 rounded-full border-2 border-white overflow-hidden shadow-lg bg-gray-800" data-id="${event.id}" style="filter: brightness(${markerBrightnessValue});">
                              <img src="${event.img}" class="w-full h-full object-cover">
                            </div>`,
                     iconSize: [40, 40],
@@ -348,21 +383,42 @@
                 markersCluster.addLayer(marker);
             });
 
-            // #upgrade 지역 발광 효과 적용
             if (regionBoundaryParams[region]) {
                 const bounds = regionBoundaryParams[region];
-                
-                // 화면 이동
                 map.fitBounds(bounds, { padding: [50, 50], duration: 1.5 });
 
-                // 발광 사각형 그리기
                 currentGlowLayer = L.rectangle(bounds, {
-                    className: 'region-glow-path', // CSS Animation 적용
+                    className: 'region-glow-path',
                     weight: 3,
                     color: '#ffeb3b',
                     fillOpacity: 0.1
                 }).addTo(map);
             }
+        }
+
+        // #upgrade 테마별 필터링
+        function filterByTheme(theme) {
+            if (currentGlowLayer) {
+                map.removeLayer(currentGlowLayer);
+                currentGlowLayer = null;
+            }
+            
+            markersCluster.clearLayers();
+            const filtered = mockEvents.filter(e => e.country === currentCountry && e.type === theme);
+            filtered.forEach(event => {
+                const markerIcon = L.divIcon({
+                    className: 'custom-pin',
+                    html: `<div class="w-10 h-10 rounded-full border-2 border-white overflow-hidden shadow-lg bg-gray-800" data-id="${event.id}" style="filter: brightness(${markerBrightnessValue});">
+                             <img src="${event.img}" class="w-full h-full object-cover">
+                           </div>`,
+                    iconSize: [40, 40],
+                    iconAnchor: [20, 20]
+                });
+                const marker = L.marker([event.lat, event.lng], { icon: markerIcon });
+                marker.eventData = event;
+                marker.on('click', () => showDetailSheet(event));
+                markersCluster.addLayer(marker);
+            });
         }
 
         function showDetailSheet(event) {
@@ -371,7 +427,7 @@
             document.getElementById('sheetRegion').innerText = event.region;
             document.getElementById('sheetSummary').innerText = event.desc;
             document.getElementById('sheetCeleb').innerText = event.celeb;
-            document.getElementById('sheetDate').innerText = '2026.02.11 ~ 2026.02.14'; // Mock
+            document.getElementById('sheetDate').innerText = '2026.02.11 ~ 2026.02.14';
             document.getElementById('sheetImage').src = event.img;
             
             sheet.classList.add('active');
@@ -381,20 +437,18 @@
             document.getElementById('detailSheet').classList.remove('active');
         });
 
-        // #upgrade Alt + 드래그 선택 로직
+        // #upgrade Alt + 드래그 선택 로직 개선
         function setupEventListeners() {
-            // ESC 키로 선택 해제
             document.addEventListener('keydown', (e) => {
                 if (e.key === 'Escape') deselectAll();
             });
 
-            // 지도 드래그/선택 이벤트
             const mapContainer = document.getElementById('map');
 
             mapContainer.addEventListener('mousedown', (e) => {
                 if (e.altKey) {
                     isSelecting = true;
-                    map.dragging.disable(); // 지도 드래그 막음
+                    map.dragging.disable();
                     selectionStart = { x: e.clientX, y: e.clientY };
                     
                     selectionBox.style.left = e.clientX + 'px';
@@ -427,40 +481,86 @@
                 
                 isSelecting = false;
                 selectionBox.style.display = 'none';
-                map.dragging.enable(); // 지도 드래그 복구
+                map.dragging.enable();
 
-                // 선택 영역의 LatLng Bounds 계산
-                const bounds = L.latLngBounds(
-                    map.containerPointToLatLng([parseInt(selectionBox.style.top), parseInt(selectionBox.style.left)]),
-                    map.containerPointToLatLng([
-                        parseInt(selectionBox.style.top) + parseInt(selectionBox.style.height),
-                        parseInt(selectionBox.style.left) + parseInt(selectionBox.style.width)
-                    ])
-                );
+                // #upgrade 선택 영역 계산 개선
+                const boxRect = selectionBox.getBoundingClientRect();
+                const southWest = map.containerPointToLatLng([boxRect.bottom, boxRect.left]);
+                const northEast = map.containerPointToLatLng([boxRect.top, boxRect.right]);
+                const bounds = L.latLngBounds(southWest, northEast);
 
-                // 마커 선택 처리
+                // #upgrade 마커 선택 로직 개선 (클러스터 대응)
                 markersCluster.eachLayer((layer) => {
                     if (bounds.contains(layer.getLatLng())) {
-                        selectMarker(layer);
+                        selectedMarkers.add(layer);
+                        // _icon은 마커가 화면에 렌더링된 후에만 존재
+                        setTimeout(() => {
+                            if (layer._icon) {
+                                const iconDiv = layer._icon.querySelector('div');
+                                if (iconDiv) iconDiv.classList.add('marker-selected');
+                            }
+                        }, 100);
                     }
                 });
+                
+                console.log(`선택된 마커 수: ${selectedMarkers.size}`);
             });
         }
 
-        function selectMarker(marker) {
-            const iconDiv = marker.getElement().querySelector('div');
-            if (iconDiv) {
-                iconDiv.classList.add('marker-selected');
-                selectedMarkers.add(marker);
-            }
-        }
-
+        // #upgrade ESC로 선택 해제
         function deselectAll() {
             selectedMarkers.forEach(marker => {
-                const iconDiv = marker.getElement().querySelector('div');
-                if (iconDiv) iconDiv.classList.remove('marker-selected');
+                if (marker._icon) {
+                    const iconDiv = marker._icon.querySelector('div');
+                    if (iconDiv) iconDiv.classList.remove('marker-selected');
+                }
             });
             selectedMarkers.clear();
+            console.log('선택 해제됨');
+        }
+        
+        // #upgrade 선택된 마커 일괄 작업 인터페이스
+        function bulkAddTag(tagName) {
+            selectedMarkers.forEach(marker => {
+                if (!marker.eventData.tags) marker.eventData.tags = [];
+                if (!marker.eventData.tags.includes(tagName)) {
+                    marker.eventData.tags.push(tagName);
+                }
+            });
+            alert(`${selectedMarkers.size}개 마커에 "${tagName}" 태그 추가됨`);
+        }
+        
+        function bulkDelete() {
+            if (confirm(`${selectedMarkers.size}개 마커를 삭제하시겠습니까?`)) {
+                selectedMarkers.forEach(marker => {
+                    markersCluster.removeLayer(marker);
+                });
+                selectedMarkers.clear();
+            }
+        }
+        
+        function bulkExport() {
+            const data = Array.from(selectedMarkers).map(m => m.eventData);
+            console.log(JSON.stringify(data, null, 2));
+            alert('선택된 데이터가 콘솔에 출력되었습니다.');
+        }
+        
+        // #upgrade 최근 검색어 localStorage
+        function saveRecentSearch(query) {
+            if (!query || query.trim() === '') return;
+            let recents = JSON.parse(localStorage.getItem('recentSearches') || '[]');
+            recents = [query, ...recents.filter(q => q !== query)].slice(0, 5);
+            localStorage.setItem('recentSearches', JSON.stringify(recents));
+            loadRecentSearches();
+        }
+        
+        function loadRecentSearches() {
+            const recents = JSON.parse(localStorage.getItem('recentSearches') || '[]');
+            const container = document.getElementById('recentList');
+            container.innerHTML = recents.map(q => 
+                `<span class="bg-gray-700 px-2 py-1 rounded cursor-pointer hover:bg-gray-600" onclick="document.querySelector('input[name=query]').value='${q}'">${q}</span>`
+            ).join('');
+            document.getElementById('recentSearch').classList.toggle('hidden', recents.length === 0);
         }
         
         function toggleMemoMode() {
