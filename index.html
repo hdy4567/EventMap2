@@ -13,8 +13,9 @@
             theme: {
                 extend: {
                     colors: {
-                        'dark-bg': '#121212',
-                        'dark-surface': '#1E1E1E',
+                        'dark-bg': '#202124',
+                        'dark-surface': '#292a2d',
+                        'dark-card': '#35363a',
                         'primary-500': '#10b981',
                         'primary-glow': '#ffeb3b',
                     },
@@ -46,7 +47,7 @@
             height: 100vh;
             width: 100vw;
             z-index: 10;
-            background-color: #121212;
+            background-color: #202124;
         }
 
         /* 커스텀 마커 스타일 */
@@ -105,28 +106,27 @@
             transition: transform 0.4s cubic-bezier(0.19, 1, 0.22, 1);
             transform: translateY(100%);
             z-index: 50;
+            background-color: #292a2d;
         }
         #detail-sheet.active {
             transform: translateY(0);
         }
 
-        /* 지역 경계 발광 효과 - 개선된 Pulse 애니메이션 */
+        /* 지역 경계 발광 효과 - 개선된 Pulse 애니메이션 (동적 크기 대응) */
         @keyframes pulse-glow {
             0%, 100% { 
                 stroke-opacity: 0.9; 
-                stroke-width: 4;
                 filter: drop-shadow(0 0 12px #ffeb3b) drop-shadow(0 0 24px #ffeb3b);
             }
             50% { 
                 stroke-opacity: 0.5; 
-                stroke-width: 6;
                 filter: drop-shadow(0 0 20px #ffeb3b) drop-shadow(0 0 40px #ffeb3b);
             }
         }
         
         .region-glow-boundary {
             stroke: #ffeb3b;
-            stroke-width: 4;
+            stroke-width: 3;
             fill: #ffeb3b;
             fill-opacity: 0.08;
             animation: pulse-glow 2.5s ease-in-out infinite;
@@ -149,7 +149,7 @@
         .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #666; }
     </style>
 </head>
-<body class="bg-[#121212] text-gray-200 overflow-hidden font-sans">
+<body class="bg-[#202124] text-gray-200 overflow-hidden font-sans">
 
     <!-- 상단 UI 컨테이너 -->
     <div class="fixed top-4 left-0 right-0 z-[60] px-4 flex flex-col items-center gap-3 pointer-events-none">
@@ -158,19 +158,19 @@
         <div class="relative group w-full max-w-md pointer-events-auto">
             <input type="text" id="search-input" 
                 placeholder="축제명, 지역, 태그 검색 (Alt+드래그로 다중선택)" 
-                class="w-full pl-10 pr-4 py-2 rounded-full bg-dark-surface border border-gray-700 focus:border-primary-500 focus:ring-2 focus:ring-primary-500 text-white shadow-lg transition-all duration-300"
+                class="w-full pl-10 pr-4 py-2 rounded-full bg-[#292a2d] border border-gray-700 focus:border-primary-500 focus:ring-2 focus:ring-primary-500 text-white shadow-lg transition-all duration-300"
                 autocomplete="off">
             <svg class="w-5 h-5 text-gray-400 absolute left-3 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
             
             <!-- 최근 검색어 -->
-            <div id="search-history" class="hidden absolute top-full left-0 right-0 mt-2 bg-dark-surface rounded-xl shadow-2xl border border-gray-700 overflow-hidden">
-                <div class="px-4 py-2 text-xs text-gray-500 font-bold bg-[#1a1a1a]">최근 검색 (최대 5개)</div>
+            <div id="search-history" class="hidden absolute top-full left-0 right-0 mt-2 bg-[#292a2d] rounded-xl shadow-2xl border border-gray-700 overflow-hidden">
+                <div class="px-4 py-2 text-xs text-gray-400 font-bold bg-[#1a1a1a]">최근 검색 (최대 5개)</div>
                 <ul id="history-list" class="text-sm max-h-40 overflow-y-auto custom-scrollbar"></ul>
             </div>
         </div>
 
         <!-- 2. 국가/지역 필터 (2단 구조) -->
-        <div class="pointer-events-auto flex flex-col items-center gap-2 bg-dark-surface/80 backdrop-blur-md p-3 rounded-2xl border border-gray-700 shadow-xl max-w-3xl">
+        <div class="pointer-events-auto flex flex-col items-center gap-2 bg-[#292a2d]/95 backdrop-blur-md p-3 rounded-2xl border border-gray-700 shadow-xl max-w-3xl">
             <!-- 국가 탭 -->
             <div class="flex space-x-2">
                 <button onclick="setCountry('Korea')" id="btn-korea" class="px-4 py-1.5 rounded-full text-sm font-bold bg-primary-500 text-white transition shadow-lg">🇰🇷 한국</button>
@@ -182,7 +182,7 @@
 
         <!-- 3. 테마 필터 -->
         <div class="pointer-events-auto flex space-x-2">
-            <button onclick="filterByTag('전체')" class="px-3 py-1 rounded-lg bg-gray-700 text-xs hover:bg-gray-600 transition">전체</button>
+            <button onclick="filterByTag('전체')" class="px-3 py-1 rounded-lg bg-gray-700 text-xs hover:bg-gray-600 transition text-white">전체</button>
             <button onclick="filterByTag('음식')" class="px-3 py-1 rounded-lg bg-orange-900 text-orange-200 text-xs hover:bg-orange-800 transition">🍔 음식</button>
             <button onclick="filterByTag('문화')" class="px-3 py-1 rounded-lg bg-purple-900 text-purple-200 text-xs hover:bg-purple-800 transition">🎭 문화</button>
             <button onclick="filterByTag('음악')" class="px-3 py-1 rounded-lg bg-red-900 text-red-200 text-xs hover:bg-red-800 transition">🎵 음악</button>
@@ -197,7 +197,7 @@
     <div id="selection-box" class="selection-box hidden"></div>
 
     <!-- 하단 이벤트 상세 정보 탭 (35% 감소) -->
-    <div id="detail-sheet" class="fixed bottom-0 left-0 right-0 max-h-[35vh] bg-dark-surface rounded-t-3xl shadow-2xl p-4 md:p-5 flex flex-col border-t border-gray-700">
+    <div id="detail-sheet" class="fixed bottom-0 left-0 right-0 max-h-[35vh] bg-[#292a2d] rounded-t-3xl shadow-2xl p-4 md:p-5 flex flex-col border-t border-gray-700">
         
         <!-- 상단 컨트롤 -->
         <div class="flex justify-between items-start mb-2 border-b border-gray-700 pb-2">
@@ -233,18 +233,465 @@
     </div>
 
     <script>
-        // --- 1. 데이터 정의 (전국 24개 + 일본 13개) ---
+        // --- 1. 데이터 정의 (전국 확장 + 일본 확장) ---
         const mockEvents = [
             // 한국 - 서울/경기
             { id: 1, name: "서울 불꽃축제", lat: 37.528, lng: 126.936, location: "서울 여의도", country: "Korea", region: "서울", tags: ["문화", "야경"], color: "#FF4500", summary: "한강의 가을밤을 수놓는 국내 최대 불꽃쇼", celeb: "불꽃 디자이너", imageUrl: "https://placehold.co/400x300/FF4500/fff?text=Seoul+Firework" },
             { id: 2, name: "에버랜드 튤립 축제", lat: 37.294, lng: 127.202, location: "경기 용인", country: "Korea", region: "경기", tags: ["자연"], color: "#FF69B4", summary: "봄의 전령사 튤립 100만 송이", celeb: "없음", imageUrl: "https://placehold.co/400x300/FF69B4/fff?text=Tulip" },
+            { id: 3, name: "광화문 광장 축제", lat: 37.5759, lng: 126.9768, location: "서울 종로", country: "Korea", region: "서울", tags: ["문화", "음악"], color: "#4169E1", summary: "도심 속 문화 공연과 거리 예술", celeb: "K-POP 스타", imageUrl: "https://placehold.co/400x300/4169E1/fff?text=Gwanghwamun" },
             
             // 강원
-            { id: 3, name: "화천 산천어축제", lat: 38.106, lng: 127.709, location: "강원 화천", country: "Korea", region: "강원", tags: ["자연", "겨울"], color: "#1E90FF", summary: "얼음 위에서 즐기는 산천어 낚시", celeb: "없음", imageUrl: "https://placehold.co/400x300/1E90FF/fff?text=IceFishing" },
-            { id: 4, name: "강릉 커피축제", lat: 37.773, lng: 128.948, location: "강원 강릉", country: "Korea", region: "강원", tags: ["음식", "문화"], color: "#6F4E37", summary: "바다와 함께하는 커피 로드 탐방", celeb: "바리스타", imageUrl: "https://placehold.co/400x300/6F4E37/fff?text=Coffee" },
-            { id: 5, name: "태백산 눈축제", lat: 37.164, lng: 128.986, location: "강원 태백", country: "Korea", region: "강원", tags: ["자연", "겨울"], color: "#E0FFFF", summary: "대형 눈조각과 겨울 체험", celeb: "없음", imageUrl: "https://placehold.co/400x300/E0FFFF/000?text=SnowFest" },
+            { id: 4, name: "화천 산천어축제", lat: 38.106, lng: 127.709, location: "강원 화천", country: "Korea", region: "강원", tags: ["자연", "겨울"], color: "#1E90FF", summary: "얼음 위에서 즐기는 산천어 낚시", celeb: "없음", imageUrl: "https://placehold.co/400x300/1E90FF/fff?text=IceFishing" },
+            { id: 5, name: "강릉 커피축제", lat: 37.773, lng: 128.948, location: "강원 강릉", country: "Korea", region: "강원", tags: ["음식", "문화"], color: "#6F4E37", summary: "바다와 함께하는 커피 로드 탐방", celeb: "바리스타", imageUrl: "https://placehold.co/400x300/6F4E37/fff?text=Coffee" },
+            { id: 6, name: "태백산 눈축제", lat: 37.164, lng: 128.986, location: "강원 태백", country: "Korea", region: "강원", tags: ["자연", "겨울"], color: "#E0FFFF", summary: "대형 눈조각과 겨울 체험", celeb: "없음", imageUrl: "https://placehold.co/400x300/E0FFFF/000?text=SnowFest" },
             
             // 충청
-            { id: 6, name: "보령 머드축제", lat: 36.315, lng: 126.541, location: "충남 보령", country: "Korea", region: "충남", tags: ["문화", "여름"], color: "#A0522D", summary: "글로벌 머드 체험과 K-POP", celeb: "K-POP 아이돌", imageUrl: "https://placehold.co/400x300/A0522D/fff?text=Mud" },
-            { id: 7, name: "천안 빵 페스티벌", lat: 36.814, lng: 127.113, location: "충남 천안", country: "Korea", region: "충남", tags: ["음식"], color: "#50bdae", summary: "전국 유명 빵집 집결", celeb: "김제빵", imageUrl: "https://placehold.co/400x300/50bdae/fff?text=Bread" },
-            { id: 8, name: "공주 백제문화제", lat: 36.452, lng: 127.113, location: "충남 공주", country: "Korea", region: "충남", tags: ["문화", "역사"], color: "#7a0019", summary: "찬란한 백제 왕조의 역사 재현", celeb: "역사 강사", imageUrl: "https://placehold.co/400x300/7a0019/fff?text=Baekje" 
+            { id: 7, name: "보령 머드축제", lat: 36.315, lng: 126.541, location: "충남 보령", country: "Korea", region: "충남", tags: ["문화", "여름"], color: "#A0522D", summary: "글로벌 머드 체험과 K-POP", celeb: "K-POP 아이돌", imageUrl: "https://placehold.co/400x300/A0522D/fff?text=Mud" },
+            { id: 8, name: "천안 빵 페스티벌", lat: 36.814, lng: 127.113, location: "충남 천안", country: "Korea", region: "충남", tags: ["음식"], color: "#50bdae", summary: "전국 유명 빵집 집결", celeb: "김제빵", imageUrl: "https://placehold.co/400x300/50bdae/fff?text=Bread" },
+            { id: 9, name: "공주 백제문화제", lat: 36.452, lng: 127.113, location: "충남 공주", country: "Korea", region: "충남", tags: ["문화", "역사"], color: "#7a0019", summary: "찬란한 백제 왕조의 역사 재현", celeb: "역사 강사", imageUrl: "https://placehold.co/400x300/7a0019/fff?text=Baekje" },
+            { id: 10, name: "청주 공예비엔날레", lat: 36.642, lng: 127.489, location: "충북 청주", country: "Korea", region: "충북", tags: ["문화", "예술"], color: "#8B4513", summary: "국제 공예 작품 전시", celeb: "공예가", imageUrl: "https://placehold.co/400x300/8B4513/fff?text=Craft" },
+            
+            // 전라
+            { id: 11, name: "전주 한지문화축제", lat: 35.824, lng: 127.147, location: "전북 전주", country: "Korea", region: "전북", tags: ["문화", "전통"], color: "#DAA520", summary: "천년 한지의 아름다움", celeb: "한지 장인", imageUrl: "https://placehold.co/400x300/DAA520/fff?text=Hanji" },
+            { id: 12, name: "광주 비엔날레", lat: 35.159, lng: 126.852, location: "전남 광주", country: "Korea", region: "전남", tags: ["문화", "예술"], color: "#9370DB", summary: "현대미술의 세계적 향연", celeb: "현대미술가", imageUrl: "https://placehold.co/400x300/9370DB/fff?text=Biennale" },
+            { id: 13, name: "여수 밤바다 축제", lat: 34.760, lng: 127.662, location: "전남 여수", country: "Korea", region: "전남", tags: ["음악", "야경"], color: "#191970", summary: "밤바다와 함께하는 음악 축제", celeb: "인디밴드", imageUrl: "https://placehold.co/400x300/191970/fff?text=Yeosu" },
+            { id: 14, name: "무주 반딧불축제", lat: 35.907, lng: 127.660, location: "전북 무주", country: "Korea", region: "전북", tags: ["자연", "여름"], color: "#ADFF2F", summary: "청정 자연 속 반딧불이 군무", celeb: "없음", imageUrl: "https://placehold.co/400x300/ADFF2F/000?text=Firefly" },
+            
+            // 경상
+            { id: 15, name: "경주 벚꽃 마라톤", lat: 35.856, lng: 129.224, location: "경북 경주", country: "Korea", region: "경북", tags: ["자연", "스포츠"], color: "#FFC0CB", summary: "고도의 봄, 벚꽃 아래 달리기", celeb: "마라토너", imageUrl: "https://placehold.co/400x300/FFC0CB/000?text=Cherry" },
+            { id: 16, name: "안동 국제탈춤페스티벌", lat: 36.568, lng: 128.729, location: "경북 안동", country: "Korea", region: "경북", tags: ["문화", "전통"], color: "#FF6347", summary: "세계 탈춤의 집결지", celeb: "탈춤 명인", imageUrl: "https://placehold.co/400x300/FF6347/fff?text=Mask" },
+            { id: 17, name: "진주 남강 유등축제", lat: 35.179, lng: 128.107, location: "경남 진주", country: "Korea", region: "경남", tags: ["문화", "야경"], color: "#FFD700", summary: "남강을 수놓는 전통 유등", celeb: "없음", imageUrl: "https://placehold.co/400x300/FFD700/000?text=Lantern" },
+            { id: 18, name: "통영 한산대첩축제", lat: 34.854, lng: 128.433, location: "경남 통영", country: "Korea", region: "경남", tags: ["문화", "역사"], color: "#4682B4", summary: "이순신 장군의 해전 재현", celeb: "역사 해설가", imageUrl: "https://placehold.co/400x300/4682B4/fff?text=Naval" },
+            
+            // 부산/제주
+            { id: 19, name: "부산 국제영화제", lat: 35.179, lng: 129.076, location: "부산 해운대", country: "Korea", region: "부산", tags: ["문화", "영화"], color: "#DC143C", summary: "아시아 최대 영화제", celeb: "영화배우", imageUrl: "https://placehold.co/400x300/DC143C/fff?text=BIFF" },
+            { id: 20, name: "부산 불꽃축제", lat: 35.153, lng: 129.118, location: "부산 광안리", country: "Korea", region: "부산", tags: ["문화", "야경"], color: "#FF1493", summary: "광안대교 위 불꽃쇼", celeb: "없음", imageUrl: "https://placehold.co/400x300/FF1493/fff?text=Firework" },
+            { id: 21, name: "제주 들불축제", lat: 33.455, lng: 126.560, location: "제주 제주시", country: "Korea", region: "제주", tags: ["자연", "전통"], color: "#FF4500", summary: "새봄을 맞이하는 들불놀이", celeb: "없음", imageUrl: "https://placehold.co/400x300/FF4500/fff?text=Fire" },
+            { id: 22, name: "제주 유채꽃 축제", lat: 33.254, lng: 126.560, location: "제주 서귀포", country: "Korea", region: "제주", tags: ["자연"], color: "#FFFF00", summary: "노란 유채꽃 물결", celeb: "없음", imageUrl: "https://placehold.co/400x300/FFFF00/000?text=Canola" },
+
+            // 일본 - 도쿄
+            { id: 101, name: "아사쿠사 산자마츠리", lat: 35.714, lng: 139.796, location: "도쿄 아사쿠사", country: "Japan", region: "도쿄", tags: ["문화", "전통"], color: "#C71585", summary: "에도 시대부터 내려온 대형 미코시 행렬", celeb: "없음", imageUrl: "https://placehold.co/400x300/C71585/fff?text=Sanja" },
+            { id: 102, name: "스미다가와 불꽃놀이", lat: 35.709, lng: 139.801, location: "도쿄 스미다", country: "Japan", region: "도쿄", tags: ["문화", "야경"], color: "#FF69B4", summary: "도쿄 3대 불꽃놀이, 20,000발 발사", celeb: "없음", imageUrl: "https://placehold.co/400x300/FF69B4/fff?text=Sumida" },
+            { id: 103, name: "하라주쿠 패션 페스티벌", lat: 35.670, lng: 139.702, location: "도쿄 시부야", country: "Japan", region: "도쿄", tags: ["문화", "음악"], color: "#FF1493", summary: "스트리트 패션과 J-POP 라이브", celeb: "J-POP 아티스트", imageUrl: "https://placehold.co/400x300/FF1493/fff?text=Harajuku" },
+            
+            // 오사카
+            { id: 104, name: "텐진마츠리", lat: 34.693, lng: 135.502, location: "오사카 텐만구", country: "Japan", region: "오사카", tags: ["문화", "전통"], color: "#FFD700", summary: "일본 3대 마츠리, 100척 배 행렬", celeb: "없음", imageUrl: "https://placehold.co/400x300/FFD700/000?text=Tenjin" },
+            { id: 105, name: "도톤보리 음식축제", lat: 34.668, lng: 135.501, location: "오사카 난바", country: "Japan", region: "오사카", tags: ["음식"], color: "#FF6347", summary: "타코야키, 오코노미야키 천국", celeb: "요리사", imageUrl: "https://placehold.co/400x300/FF6347/fff?text=Dotonbori" },
+            { id: 106, name: "오사카성 벚꽃 축제", lat: 34.687, lng: 135.526, location: "오사카 주오", country: "Japan", region: "오사카", tags: ["자연", "역사"], color: "#FFC0CB", summary: "성곽과 벚꽃의 조화", celeb: "없음", imageUrl: "https://placehold.co/400x300/FFC0CB/000?text=Osaka+Castle" },
+            
+            // 교토
+            { id: 107, name: "기온마츠리", lat: 35.003, lng: 135.768, location: "교토 기온", country: "Japan", region: "교토", tags: ["문화", "전통"], color: "#DC143C", summary: "천년 역사의 야마보코 순행", celeb: "없음", imageUrl: "https://placehold.co/400x300/DC143C/fff?text=Gion" },
+            { id: 108, name: "아라시야마 대나무숲 축제", lat: 35.009, lng: 135.672, location: "교토 아라시야마", country: "Japan", region: "교토", tags: ["자연", "문화"], color: "#228B22", summary: "죽림 속 등불 야경", celeb: "없음", imageUrl: "https://placehold.co/400x300/228B22/fff?text=Bamboo" },
+            
+            // 후쿠오카
+            { id: 109, name: "하카타 기온 야마카사", lat: 33.594, lng: 130.401, location: "후쿠오카 하카타", country: "Japan", region: "후쿠오카", tags: ["문화", "전통"], color: "#FF4500", summary: "새벽 5시 남자들의 질주", celeb: "없음", imageUrl: "https://placehold.co/400x300/FF4500/fff?text=Yamakasa" },
+            { id: 110, name: "후쿠오카 라면 페스티벌", lat: 33.590, lng: 130.401, location: "후쿠오카 텐진", country: "Japan", region: "후쿠오카", tags: ["음식"], color: "#D2691E", summary: "하카타 돈코츠 라면 대회", celeb: "라멘 장인", imageUrl: "https://placehold.co/400x300/D2691E/fff?text=Ramen" },
+            
+            // 홋카이도
+            { id: 111, name: "삿포로 눈축제", lat: 43.064, lng: 141.347, location: "홋카이도 삿포로", country: "Japan", region: "홋카이도", tags: ["자연", "겨울"], color: "#87CEEB", summary: "대형 눈조각 예술 전시", celeb: "없음", imageUrl: "https://placehold.co/400x300/87CEEB/000?text=Snow+Festival" },
+            { id: 112, name: "후라노 라벤더 축제", lat: 43.343, lng: 142.383, location: "홋카이도 후라노", country: "Japan", region: "홋카이도", tags: ["자연"], color: "#9370DB", summary: "보라색 라벤더 들판", celeb: "없음", imageUrl: "https://placehold.co/400x300/9370DB/fff?text=Lavender" },
+            
+            // 오키나와
+            { id: 113, name: "나하 대줄다리기", lat: 26.212, lng: 127.679, location: "오키나와 나하", country: "Japan", region: "오키나와", tags: ["문화", "전통"], color: "#00CED1", summary: "기네스 인정 세계 최대 줄다리기", celeb: "없음", imageUrl: "https://placehold.co/400x300/00CED1/fff?text=Naha" },
+            { id: 114, name: "오키나와 해양 엑스포", lat: 26.694, lng: 127.878, location: "오키나와 모토부", country: "Japan", region: "오키나와", tags: ["자연", "문화"], color: "#20B2AA", summary: "에메랄드 해변과 류큐 문화", celeb: "없음", imageUrl: "https://placehold.co/400x300/20B2AA/fff?text=Ocean" },
+        ];
+
+        // --- 2. 지역 경계 파라미터 (GeoJSON 없이 동작) ---
+        const regionBoundaryParams = {
+            // 한국
+            "서울": { bounds: [[37.42, 126.76], [37.70, 127.18]], glowColor: "#ffeb3b", strokeWidth: 3, duration: 2.5, opacity: 0.08 },
+            "경기": { bounds: [[36.89, 126.70], [38.31, 127.52]], glowColor: "#ffeb3b", strokeWidth: 3, duration: 2.5, opacity: 0.08 },
+            "강원": { bounds: [[37.02, 127.05], [38.61, 129.35]], glowColor: "#ffeb3b", strokeWidth: 3, duration: 2.5, opacity: 0.08 },
+            "충남": { bounds: [[35.98, 126.10], [37.00, 127.50]], glowColor: "#ffeb3b", strokeWidth: 3, duration: 2.5, opacity: 0.08 },
+            "충북": { bounds: [[36.30, 127.20], [37.20, 128.50]], glowColor: "#ffeb3b", strokeWidth: 3, duration: 2.5, opacity: 0.08 },
+            "전북": { bounds: [[35.40, 126.48], [36.20, 127.80]], glowColor: "#ffeb3b", strokeWidth: 3, duration: 2.5, opacity: 0.08 },
+            "전남": { bounds: [[34.20, 126.08], [35.50, 127.80]], glowColor: "#ffeb3b", strokeWidth: 3, duration: 2.5, opacity: 0.08 },
+            "경북": { bounds: [[35.60, 128.10], [37.20, 129.60]], glowColor: "#ffeb3b", strokeWidth: 3, duration: 2.5, opacity: 0.08 },
+            "경남": { bounds: [[34.60, 127.70], [35.90, 129.30]], glowColor: "#ffeb3b", strokeWidth: 3, duration: 2.5, opacity: 0.08 },
+            "부산": { bounds: [[35.05, 128.93], [35.25, 129.23]], glowColor: "#ffeb3b", strokeWidth: 3, duration: 2.5, opacity: 0.08 },
+            "제주": { bounds: [[33.19, 126.15], [33.57, 126.95]], glowColor: "#ffeb3b", strokeWidth: 3, duration: 2.5, opacity: 0.08 },
+            
+            // 일본
+            "도쿄": { bounds: [[35.53, 139.56], [35.82, 139.93]], glowColor: "#ff69b4", strokeWidth: 3, duration: 2.5, opacity: 0.08 },
+            "오사카": { bounds: [[34.60, 135.41], [34.79, 135.60]], glowColor: "#ff69b4", strokeWidth: 3, duration: 2.5, opacity: 0.08 },
+            "교토": { bounds: [[34.90, 135.60], [35.17, 135.88]], glowColor: "#ff69b4", strokeWidth: 3, duration: 2.5, opacity: 0.08 },
+            "후쿠오카": { bounds: [[33.52, 130.30], [33.68, 130.52]], glowColor: "#ff69b4", strokeWidth: 3, duration: 2.5, opacity: 0.08 },
+            "홋카이도": { bounds: [[41.38, 139.70], [45.52, 145.82]], glowColor: "#ff69b4", strokeWidth: 3, duration: 2.5, opacity: 0.08 },
+            "오키나와": { bounds: [[24.05, 122.93], [28.40, 131.35]], glowColor: "#ff69b4", strokeWidth: 3, duration: 2.5, opacity: 0.08 },
+        };
+
+        // --- 3. 전역 변수 ---
+        let map, markerClusterGroup;
+        let allMarkers = [];
+        let selectedMarkers = [];
+        let currentRegionGlow = null;
+        let searchHistory = JSON.parse(localStorage.getItem('searchHistory')) || [];
+        let currentCountry = 'Korea';
+
+        // --- 4. 지도 초기화 ---
+        function initializeMap() {
+            const detailSheet = document.getElementById('detail-sheet');
+            const closeButton = document.getElementById('close-button');
+
+            if (typeof L !== 'undefined') {
+                map = L.map('map', {
+                    center: [35.9, 127.5],
+                    zoom: 7,
+                    zoomControl: true,
+                    attributionControl: false
+                });
+
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    maxZoom: 18,
+                }).addTo(map);
+
+                markerClusterGroup = L.markerClusterGroup({
+                    maxClusterRadius: 80,
+                    iconCreateFunction: function(cluster) {
+                        const childCount = cluster.getChildCount();
+                        let c = ' marker-cluster-';
+                        if (childCount < 10) {
+                            c += 'small';
+                        } else if (childCount < 30) {
+                            c += 'medium';
+                        } else {
+                            c += 'large';
+                        }
+                        
+                        if (childCount >= 30) {
+                            c += ' cluster-high-density';
+                        }
+
+                        return new L.DivIcon({ 
+                            html: '<div><span>' + childCount + '</span></div>', 
+                            className: 'marker-cluster' + c, 
+                            iconSize: new L.Point(40, 40) 
+                        });
+                    }
+                });
+                map.addLayer(markerClusterGroup);
+
+                loadEventMarkers();
+                initSearchFeature();
+                initDragSelection();
+                updateRegionList('Korea');
+
+                closeButton.addEventListener('click', () => {
+                    detailSheet.classList.remove('active');
+                });
+            }
+        }
+
+        // --- 5. 마커 로드 ---
+        function loadEventMarkers(filterCountry = null, filterRegion = null, filterTag = null) {
+            markerClusterGroup.clearLayers();
+            allMarkers = [];
+
+            let filteredEvents = mockEvents;
+            if (filterCountry) filteredEvents = filteredEvents.filter(e => e.country === filterCountry);
+            if (filterRegion) filteredEvents = filteredEvents.filter(e => e.region === filterRegion);
+            if (filterTag && filterTag !== '전체') filteredEvents = filteredEvents.filter(e => e.tags.includes(filterTag));
+
+            filteredEvents.forEach(event => {
+                const iconHtml = `<div class="event-marker" style="border-color: ${event.color};"><img src="${event.imageUrl}" alt="${event.name}"></div>`;
+                const customIcon = L.divIcon({
+                    html: iconHtml,
+                    className: '',
+                    iconSize: [57.6, 57.6],
+                    iconAnchor: [28.8, 28.8]
+                });
+
+                const marker = L.marker([event.lat, event.lng], { icon: customIcon });
+                marker.eventData = event;
+
+                marker.on('click', () => {
+                    showDetailSheet(event);
+                    map.panTo([event.lat, event.lng]);
+                });
+
+                allMarkers.push(marker);
+                markerClusterGroup.addLayer(marker);
+            });
+        }
+
+        // --- 6. 상세 시트 표시 ---
+        function showDetailSheet(event) {
+            const sheet = document.getElementById('detail-sheet');
+            document.getElementById('sheet-title').textContent = event.name;
+            document.getElementById('sheet-summary').textContent = event.summary;
+            document.getElementById('sheet-celeb').textContent = event.celeb;
+            document.getElementById('sheet-image').src = event.imageUrl;
+
+            const tagsContainer = document.getElementById('sheet-tags');
+            tagsContainer.innerHTML = '';
+            event.tags.forEach(tag => {
+                const tagEl = document.createElement('span');
+                tagEl.className = 'px-2 py-0.5 rounded-full text-xs bg-primary-500/20 text-primary-500 font-bold';
+                tagEl.textContent = tag;
+                tagsContainer.appendChild(tagEl);
+            });
+
+            sheet.classList.add('active');
+        }
+
+        // --- 7. 국가/지역 필터 ---
+        function setCountry(country) {
+            currentCountry = country;
+            document.getElementById('btn-korea').className = country === 'Korea' 
+                ? 'px-4 py-1.5 rounded-full text-sm font-bold bg-primary-500 text-white transition shadow-lg'
+                : 'px-4 py-1.5 rounded-full text-sm font-bold bg-gray-700 text-gray-300 hover:bg-gray-600 transition';
+            document.getElementById('btn-japan').className = country === 'Japan' 
+                ? 'px-4 py-1.5 rounded-full text-sm font-bold bg-primary-500 text-white transition shadow-lg'
+                : 'px-4 py-1.5 rounded-full text-sm font-bold bg-gray-700 text-gray-300 hover:bg-gray-600 transition';
+            
+            updateRegionList(country);
+            loadEventMarkers(country);
+
+            const centerCoords = country === 'Korea' ? [35.9, 127.5] : [36.2, 138.25];
+            const zoomLevel = country === 'Korea' ? 7 : 5;
+            map.setView(centerCoords, zoomLevel);
+        }
+
+        function updateRegionList(country) {
+            const regionList = document.getElementById('region-list');
+            regionList.innerHTML = '';
+
+            const regions = country === 'Korea' 
+                ? ["서울", "경기", "강원", "충남", "충북", "전북", "전남", "경북", "경남", "부산", "제주"]
+                : ["도쿄", "오사카", "교토", "후쿠오카", "홋카이도", "오키나와"];
+
+            regions.forEach(region => {
+                const btn = document.createElement('button');
+                btn.textContent = region;
+                btn.className = 'px-3 py-1 rounded-lg bg-gray-700 text-xs hover:bg-gray-600 transition text-white';
+                btn.onclick = () => {
+                    filterByRegion(region);
+                    highlightRegionBoundary(region);
+                };
+                regionList.appendChild(btn);
+            });
+        }
+
+        function filterByRegion(region) {
+            loadEventMarkers(currentCountry, region);
+        }
+
+        function filterByTag(tag) {
+            loadEventMarkers(currentCountry, null, tag);
+        }
+
+        // --- 8. 지역 경계 발광 (파라미터 기반, 크기 동기화) ---
+        function highlightRegionBoundary(region) {
+            if (currentRegionGlow) {
+                map.removeLayer(currentRegionGlow);
+                currentRegionGlow = null;
+            }
+
+            const params = regionBoundaryParams[region];
+            if (!params) return;
+
+            const bounds = L.latLngBounds(params.bounds);
+            const rectangle = L.rectangle(bounds, {
+                color: params.glowColor,
+                weight: params.strokeWidth,
+                fillColor: params.glowColor,
+                fillOpacity: params.opacity,
+                className: 'region-glow-boundary'
+            });
+
+            rectangle.addTo(map);
+            currentRegionGlow = rectangle;
+
+            map.fitBounds(bounds, { padding: [50, 50], maxZoom: 10 });
+
+            setTimeout(() => {
+                if (currentRegionGlow) {
+                    map.removeLayer(currentRegionGlow);
+                    currentRegionGlow = null;
+                }
+            }, 5000);
+        }
+
+        // --- 9. 검색 기능 (최근 검색 5개) ---
+        function initSearchFeature() {
+            const searchInput = document.getElementById('search-input');
+            const historyDiv = document.getElementById('search-history');
+            const historyList = document.getElementById('history-list');
+
+            searchInput.addEventListener('input', (e) => {
+                const query = e.target.value.toLowerCase();
+                if (query.length > 0) {
+                    const results = mockEvents.filter(ev => 
+                        ev.name.toLowerCase().includes(query) ||
+                        ev.region.toLowerCase().includes(query) ||
+                        ev.tags.some(t => t.toLowerCase().includes(query))
+                    );
+                    loadEventMarkers(currentCountry);
+                    if (results.length > 0) {
+                        map.panTo([results[0].lat, results[0].lng]);
+                    }
+                } else {
+                    loadEventMarkers(currentCountry);
+                }
+            });
+
+            searchInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    const query = searchInput.value.trim();
+                    if (query) {
+                        addSearchHistory(query);
+                        renderSearchHistory();
+                    }
+                }
+            });
+
+            searchInput.addEventListener('focus', () => {
+                if (searchHistory.length > 0) {
+                    historyDiv.classList.remove('hidden');
+                }
+            });
+
+            document.addEventListener('click', (e) => {
+                if (!searchInput.contains(e.target) && !historyDiv.contains(e.target)) {
+                    historyDiv.classList.add('hidden');
+                }
+            });
+
+            renderSearchHistory();
+        }
+
+        function addSearchHistory(query) {
+            searchHistory = searchHistory.filter(q => q !== query);
+            searchHistory.unshift(query);
+            if (searchHistory.length > 5) searchHistory.pop();
+            localStorage.setItem('searchHistory', JSON.stringify(searchHistory));
+        }
+
+        function renderSearchHistory() {
+            const historyList = document.getElementById('history-list');
+            historyList.innerHTML = '';
+            searchHistory.forEach(query => {
+                const li = document.createElement('li');
+                li.className = 'px-4 py-2 hover:bg-gray-700 cursor-pointer text-white';
+                li.textContent = query;
+                li.onclick = () => {
+                    document.getElementById('search-input').value = query;
+                    document.getElementById('search-history').classList.add('hidden');
+                    document.getElementById('search-input').dispatchEvent(new Event('input'));
+                };
+                historyList.appendChild(li);
+            });
+        }
+
+        // --- 10. Alt+드래그 선택 (마커 선택 인터페이스 추가) ---
+        function initDragSelection() {
+            let isAltPressed = false;
+            let isSelecting = false;
+            let startX, startY;
+            const selectionBox = document.getElementById('selection-box');
+
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Alt') {
+                    isAltPressed = true;
+                    map.dragging.disable();
+                }
+            });
+
+            document.addEventListener('keyup', (e) => {
+                if (e.key === 'Alt') {
+                    isAltPressed = false;
+                    map.dragging.enable();
+                    
+                    // Alt만 누르면 선택 해제
+                    clearSelection();
+                }
+            });
+
+            map.getContainer().addEventListener('mousedown', (e) => {
+                if (isAltPressed && e.button === 0) {
+                    isSelecting = true;
+                    startX = e.clientX;
+                    startY = e.clientY;
+                    selectionBox.style.left = startX + 'px';
+                    selectionBox.style.top = startY + 'px';
+                    selectionBox.style.width = '0px';
+                    selectionBox.style.height = '0px';
+                    selectionBox.classList.remove('hidden');
+                }
+            });
+
+            document.addEventListener('mousemove', (e) => {
+                if (isSelecting) {
+                    const currentX = e.clientX;
+                    const currentY = e.clientY;
+                    const width = Math.abs(currentX - startX);
+                    const height = Math.abs(currentY - startY);
+                    selectionBox.style.width = width + 'px';
+                    selectionBox.style.height = height + 'px';
+                    selectionBox.style.left = Math.min(startX, currentX) + 'px';
+                    selectionBox.style.top = Math.min(startY, currentY) + 'px';
+                }
+            });
+
+            document.addEventListener('mouseup', (e) => {
+                if (isSelecting) {
+                    isSelecting = false;
+                    const endX = e.clientX;
+                    const endY = e.clientY;
+                    selectMarkersInBox(startX, startY, endX, endY);
+                    selectionBox.classList.add('hidden');
+                }
+            });
+        }
+
+        function selectMarkersInBox(x1, y1, x2, y2) {
+            const minX = Math.min(x1, x2);
+            const maxX = Math.max(x1, x2);
+            const minY = Math.min(y1, y2);
+            const maxY = Math.max(y1, y2);
+
+            selectedMarkers = [];
+
+            allMarkers.forEach(marker => {
+                const pos = map.latLngToContainerPoint(marker.getLatLng());
+                if (pos.x >= minX && pos.x <= maxX && pos.y >= minY && pos.y <= maxY) {
+                    selectedMarkers.push(marker);
+                    const iconElement = marker.getElement();
+                    if (iconElement) {
+                        const markerDiv = iconElement.querySelector('.event-marker');
+                        if (markerDiv) markerDiv.classList.add('selected-marker');
+                    }
+                }
+            });
+
+            console.log(`선택된 마커 수: ${selectedMarkers.length}`);
+            
+            // 선택된 마커들에 대한 추가 인터페이스 (태그 추가 등)
+            if (selectedMarkers.length > 0) {
+                showMultiSelectOptions();
+            }
+        }
+
+        function clearSelection() {
+            selectedMarkers.forEach(marker => {
+                const iconElement = marker.getElement();
+                if (iconElement) {
+                    const markerDiv = iconElement.querySelector('.event-marker');
+                    if (markerDiv) markerDiv.classList.remove('selected-marker');
+                }
+            });
+            selectedMarkers = [];
+            console.log('선택 해제됨');
+        }
+
+        // 선택된 마커들에 대한 추가 작업 인터페이스 (예: 태그 일괄 추가)
+        function showMultiSelectOptions() {
+            // TODO: 선택된 마커들에 태그 추가, 삭제, 메모 추가 등의 UI 표시
+            console.log('다중 선택 옵션 활성화:', selectedMarkers.map(m => m.eventData.name));
+        }
+
+        // --- 11. 페이지 로드 ---
+        window.onload = initializeMap;
+    </script>
+</body>
+</html>
