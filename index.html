@@ -575,4 +575,63 @@
                 return;
             }
             markersPlugin.clearLayers();
-            const results = 
+            const results = mockEvents.filter(ev => 
+                ev.name.toLowerCase().includes(query) || 
+                ev.region.includes(query) || 
+                ev.tags.some(t => t.includes(query))
+            );
+            
+            results.forEach(ev => {
+                const customIcon = L.divIcon({
+                    className: 'custom-event-marker',
+                    html: `<div class="event-marker" style="border-color: ${ev.color};"><img src="${ev.imageUrl}" alt="${ev.name}"/></div>`,
+                    iconSize: [58, 58],
+                    iconAnchor: [29, 58]
+                });
+                const marker = L.marker([ev.lat, ev.lng], { icon: customIcon, eventId: ev.id });
+                marker.on('click', (e) => { L.DomEvent.stopPropagation(e); showDetailSheet(ev); });
+                markersPlugin.addLayer(marker);
+            });
+        }
+
+        function saveSearchHistory(keyword) {
+            if (!keyword) return;
+            searchHistory = [keyword, ...searchHistory.filter(k => k !== keyword)].slice(0, 5);
+            localStorage.setItem('eventMapHistory', JSON.stringify(searchHistory));
+            renderSearchHistory();
+        }
+
+        function renderSearchHistory() {
+            const list = document.getElementById('history-list');
+            list.innerHTML = searchHistory.map(k => 
+                `<li class="px-4 py-2 hover:bg-gray-700 cursor-pointer border-b border-gray-800 last:border-0 text-gray-100" onclick="applySearch('${k}')">${k}</li>`
+            ).join('');
+        }
+
+        function showSearchHistory() { document.getElementById('search-history').classList.remove('hidden'); }
+        function hideSearchHistory() { document.getElementById('search-history').classList.add('hidden'); }
+        function applySearch(k) {
+            document.getElementById('search-input').value = k;
+            handleSearch({target: {value: k}});
+        }
+
+        function showDetailSheet(eventData) {
+            document.getElementById('sheet-title').innerText = eventData.name;
+            document.getElementById('sheet-summary').innerText = eventData.summary;
+            document.getElementById('sheet-celeb').innerText = eventData.celeb || "정보 없음";
+            document.getElementById('sheet-image').src = eventData.imageUrl;
+            
+            const tagsContainer = document.getElementById('sheet-tags');
+            tagsContainer.innerHTML = eventData.tags.map(t => `<span class="px-2 py-0.5 rounded bg-gray-700 text-xs text-gray-300">#${t}</span>`).join('');
+
+            detailSheet.classList.add('active');
+            map.panTo([eventData.lat, eventData.lng], { animate: true, duration: 1 });
+        }
+
+        function hideDetailSheet() {
+            detailSheet.classList.remove('active');
+        }
+
+    </script>
+</body>
+</html>
