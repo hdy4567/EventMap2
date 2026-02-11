@@ -13,10 +13,10 @@
             theme: {
                 extend: {
                     colors: {
-                        'dark-bg': '#121212', // Material Dark
+                        'dark-bg': '#121212',
                         'dark-surface': '#1E1E1E',
                         'primary-500': '#10b981',
-                        'primary-glow': '#ffeb3b', // 지역 강조용 노란색
+                        'primary-glow': '#ffeb3b',
                     },
                     fontFamily: {
                         sans: ['Inter', 'Malgun Gothic', 'Dotum', 'sans-serif'],
@@ -51,8 +51,8 @@
 
         /* 커스텀 마커 스타일 */
         .event-marker {
-            width: 64px;
-            height: 64px;
+            width: 57.6px;  /* 10% 감소 */
+            height: 57.6px;
             border-radius: 50%;
             overflow: hidden;
             border: 4px solid #10b981;
@@ -70,6 +70,7 @@
             height: 100%;
             object-fit: cover;
         }
+        
         /* 선택된 마커 스타일 (Alt+Drag) */
         .event-marker.selected-marker {
             border-color: #ff4444 !important;
@@ -77,20 +78,19 @@
             transform: scale(1.15);
         }
 
-        /* 클러스터링: 데이터 많을 때 빨간색 표시 (Red Heatmap 느낌) */
+        /* 클러스터링: 데이터 많을 때 빨간색 표시 */
         .marker-cluster-small { background-color: rgba(181, 226, 140, 0.6); }
         .marker-cluster-small div { background-color: rgba(110, 204, 57, 0.6); }
         .marker-cluster-medium { background-color: rgba(241, 211, 87, 0.6); }
         .marker-cluster-medium div { background-color: rgba(240, 194, 12, 0.6); }
         
-        /* Large 클러스터 -> 빨간색 강조 */
         .marker-cluster-large { 
             background-color: rgba(253, 156, 115, 0.6); 
         }
         .marker-cluster-large div { 
             background-color: rgba(241, 128, 23, 0.6); 
         }
-        /* Custom Very High Density (Overridden in JS) */
+        
         .cluster-high-density {
             background-color: rgba(255, 0, 0, 0.4) !important;
         }
@@ -100,7 +100,7 @@
             font-weight: bold;
         }
 
-        /* 하단 탭 (Bottom Sheet) */
+        /* 하단 탭 (30% 감소) */
         #detail-sheet {
             transition: transform 0.4s cubic-bezier(0.19, 1, 0.22, 1);
             transform: translateY(100%);
@@ -110,19 +110,27 @@
             transform: translateY(0);
         }
 
-        /* 지역 경계 발광 효과 (Glow) */
+        /* 지역 경계 발광 효과 - 개선된 Pulse 애니메이션 */
         @keyframes pulse-glow {
-            0% { box-shadow: 0 0 10px #ffeb3b inset, 0 0 20px #ffeb3b; stroke-opacity: 0.8; }
-            50% { box-shadow: 0 0 20px #ffeb3b inset, 0 0 40px #ffeb3b; stroke-opacity: 0.4; }
-            100% { box-shadow: 0 0 10px #ffeb3b inset, 0 0 20px #ffeb3b; stroke-opacity: 0.8; }
+            0%, 100% { 
+                stroke-opacity: 0.9; 
+                stroke-width: 4;
+                filter: drop-shadow(0 0 12px #ffeb3b) drop-shadow(0 0 24px #ffeb3b);
+            }
+            50% { 
+                stroke-opacity: 0.5; 
+                stroke-width: 6;
+                filter: drop-shadow(0 0 20px #ffeb3b) drop-shadow(0 0 40px #ffeb3b);
+            }
         }
-        .region-glow-path {
+        
+        .region-glow-boundary {
             stroke: #ffeb3b;
-            stroke-width: 3;
+            stroke-width: 4;
             fill: #ffeb3b;
-            fill-opacity: 0.1;
-            animation: pulse-glow 2s infinite;
-            filter: drop-shadow(0 0 10px #ffeb3b);
+            fill-opacity: 0.08;
+            animation: pulse-glow 2.5s ease-in-out infinite;
+            pointer-events: none;
         }
 
         /* 드래그 선택 박스 */
@@ -130,30 +138,34 @@
             border: 2px dashed #ff4444;
             background-color: rgba(255, 68, 68, 0.2);
             position: absolute;
-            z-index: 2000; /* 지도보다 위 */
+            z-index: 2000;
             pointer-events: none;
         }
+
+        /* 커스텀 스크롤바 */
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #1a1a1a; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #444; border-radius: 3px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #666; }
     </style>
 </head>
 <body class="bg-[#121212] text-gray-200 overflow-hidden font-sans">
 
-    <!-- 상단 UI 컨테이너 (검색, 필터) -->
+    <!-- 상단 UI 컨테이너 -->
     <div class="fixed top-4 left-0 right-0 z-[60] px-4 flex flex-col items-center gap-3 pointer-events-none">
         
-        <!-- 1. 검색창 (최근 검색어 포함) -->
+        <!-- 1. 검색창 -->
         <div class="relative group w-full max-w-md pointer-events-auto">
             <input type="text" id="search-input" 
                 placeholder="축제명, 지역, 태그 검색 (Alt+드래그로 다중선택)" 
-                class="w-full pl-10 pr-4 py-2 rounded-full bg-dark-surface border border-gray-700 focus:border-primary-500 focus:ring-2 focus:ring-primary-500 text-white shadow-lg transition-all duration-300 group-hover:w-[105%]"
+                class="w-full pl-10 pr-4 py-2 rounded-full bg-dark-surface border border-gray-700 focus:border-primary-500 focus:ring-2 focus:ring-primary-500 text-white shadow-lg transition-all duration-300"
                 autocomplete="off">
             <svg class="w-5 h-5 text-gray-400 absolute left-3 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
             
-            <!-- 최근 검색어 (Focus 시 노출) -->
+            <!-- 최근 검색어 -->
             <div id="search-history" class="hidden absolute top-full left-0 right-0 mt-2 bg-dark-surface rounded-xl shadow-2xl border border-gray-700 overflow-hidden">
-                <div class="px-4 py-2 text-xs text-gray-500 font-bold bg-[#1a1a1a]">최근 검색</div>
-                <ul id="history-list" class="text-sm">
-                    <!-- JS로 주입 -->
-                </ul>
+                <div class="px-4 py-2 text-xs text-gray-500 font-bold bg-[#1a1a1a]">최근 검색 (최대 5개)</div>
+                <ul id="history-list" class="text-sm max-h-40 overflow-y-auto custom-scrollbar"></ul>
             </div>
         </div>
 
@@ -161,13 +173,11 @@
         <div class="pointer-events-auto flex flex-col items-center gap-2 bg-dark-surface/80 backdrop-blur-md p-3 rounded-2xl border border-gray-700 shadow-xl max-w-3xl">
             <!-- 국가 탭 -->
             <div class="flex space-x-2">
-                <button onclick="setCountry('Korea')" id="btn-korea" class="px-4 py-1.5 rounded-full text-sm font-bold bg-primary-500 text-white transition">🇰🇷 한국</button>
+                <button onclick="setCountry('Korea')" id="btn-korea" class="px-4 py-1.5 rounded-full text-sm font-bold bg-primary-500 text-white transition shadow-lg">🇰🇷 한국</button>
                 <button onclick="setCountry('Japan')" id="btn-japan" class="px-4 py-1.5 rounded-full text-sm font-bold bg-gray-700 text-gray-300 hover:bg-gray-600 transition">🇯🇵 일본</button>
             </div>
-            <!-- 지역 목록 (동적 변경) -->
-            <div id="region-list" class="flex flex-wrap justify-center gap-2 max-h-24 overflow-y-auto custom-scrollbar">
-                <!-- JS로 주입 -->
-            </div>
+            <!-- 지역 목록 -->
+            <div id="region-list" class="flex flex-wrap justify-center gap-2 max-h-32 overflow-y-auto custom-scrollbar"></div>
         </div>
 
         <!-- 3. 테마 필터 -->
@@ -183,411 +193,58 @@
     <!-- 지도 컨테이너 -->
     <div id="map" class="relative outline-none"></div>
 
-    <!-- 드래그 선택 박스 (동적 생성용) -->
+    <!-- 드래그 선택 박스 -->
     <div id="selection-box" class="selection-box hidden"></div>
 
-    <!-- 하단 이벤트 상세 정보 탭 (Bottom Sheet) -->
-    <div id="detail-sheet" class="fixed bottom-0 left-0 right-0 max-h-[50vh] bg-dark-surface rounded-t-3xl shadow-2xl p-5 md:p-6 flex flex-col border-t border-gray-700">
+    <!-- 하단 이벤트 상세 정보 탭 (35% 감소) -->
+    <div id="detail-sheet" class="fixed bottom-0 left-0 right-0 max-h-[35vh] bg-dark-surface rounded-t-3xl shadow-2xl p-4 md:p-5 flex flex-col border-t border-gray-700">
         
-        <!-- 상단 컨트롤 (닫기) -->
-        <div class="flex justify-between items-start mb-3 border-b border-gray-700 pb-3">
+        <!-- 상단 컨트롤 -->
+        <div class="flex justify-between items-start mb-2 border-b border-gray-700 pb-2">
             <div class="flex-1 pr-4">
-                <h2 id="sheet-title" class="text-xl font-extrabold text-white"></h2>
+                <h2 id="sheet-title" class="text-lg font-extrabold text-white"></h2>
                 <div id="sheet-tags" class="flex gap-1 mt-1 flex-wrap"></div>
             </div>
             <button id="close-button" class="flex-shrink-0 bg-gray-700 hover:bg-gray-600 text-white p-2 rounded-full transition">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
                     <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
                 </svg>
             </button>
         </div>
 
-        <!-- 상세 내용 (스크롤 가능) -->
-        <div class="overflow-y-auto flex-grow custom-scrollbar flex gap-4">
-            <!-- 이미지 -->
-            <div class="w-1/3 flex-shrink-0">
-                <img id="sheet-image" src="" class="w-full h-32 object-cover rounded-lg border border-gray-600" alt="행사 이미지">
+        <!-- 상세 내용 -->
+        <div class="overflow-y-auto flex-grow custom-scrollbar flex gap-3">
+            <!-- 이미지 (비율 유지) -->
+            <div class="w-2/5 flex-shrink-0">
+                <img id="sheet-image" src="" class="w-full h-24 object-cover rounded-lg border border-gray-600" alt="행사 이미지">
             </div>
             <!-- 텍스트 -->
-            <div class="w-2/3">
-                <div class="mb-4">
-                    <h3 class="text-sm font-bold text-primary-500 mb-1">행사 요약</h3>
-                    <p id="sheet-summary" class="text-gray-300 text-sm leading-relaxed whitespace-pre-line"></p>
+            <div class="w-3/5">
+                <div class="mb-3">
+                    <h3 class="text-xs font-bold text-primary-500 mb-1">행사 요약</h3>
+                    <p id="sheet-summary" class="text-gray-300 text-xs leading-relaxed whitespace-pre-line"></p>
                 </div>
                 <div>
-                    <h3 class="text-sm font-bold text-primary-500 mb-1">초청 게스트</h3>
-                    <p id="sheet-celeb" class="text-gray-300 text-sm"></p>
+                    <h3 class="text-xs font-bold text-primary-500 mb-1">초청 게스트</h3>
+                    <p id="sheet-celeb" class="text-gray-300 text-xs"></p>
                 </div>
             </div>
         </div>
     </div>
 
     <script>
-        // --- 1. 데이터 정의 (한국 24개 + 일본 13개) ---
+        // --- 1. 데이터 정의 (전국 24개 + 일본 13개) ---
         const mockEvents = [
-            // 한국 데이터 (기존 충남/충북 + 확장)
-            { id: 1, name: "천안 빵 페스티벌", lat: 36.814, lng: 127.113, location: "충남 천안", country: "Korea", region: "충남", tags: ["음식"], color: "#50bdae", summary: "전국 유명 빵집 집결", celeb: "김제빵", imageUrl: "https://placehold.co/300x200/50bdae/fff?text=Bread" },
-            { id: 2, name: "보령 머드 축제", lat: 36.315, lng: 126.541, location: "충남 보령", country: "Korea", region: "충남", tags: ["문화", "액티비티"], color: "#A0522D", summary: "글로벌 머드 체험", celeb: "K-POP 아이돌", imageUrl: "https://placehold.co/300x200/A0522D/fff?text=Mud" },
-            { id: 3, name: "서울 불꽃 축제", lat: 37.528, lng: 126.936, location: "서울 여의도", country: "Korea", region: "서울", tags: ["문화", "야경"], color: "#FF4500", summary: "한강의 가을밤을 수놓는 불꽃", celeb: "불꽃 디자이너", imageUrl: "https://placehold.co/300x200/FF4500/fff?text=Firework" },
-            { id: 4, name: "부산 국제 영화제", lat: 35.171, lng: 129.127, location: "부산 해운대", country: "Korea", region: "부산", tags: ["문화", "영화"], color: "#E50914", summary: "아시아 최대 영화제", celeb: "유명 배우 다수", imageUrl: "https://placehold.co/300x200/E50914/fff?text=BIFF" },
-            { id: 5, name: "전주 비빔밥 축제", lat: 35.815, lng: 127.153, location: "전북 전주", country: "Korea", region: "전북", tags: ["음식"], color: "#FFA500", summary: "맛의 고장 전주 비빔밥", celeb: "한식 명인", imageUrl: "https://placehold.co/300x200/FFA500/fff?text=Bibim" },
-            { id: 6, name: "강릉 커피 축제", lat: 37.773, lng: 128.948, location: "강원 강릉", country: "Korea", region: "강원", tags: ["음식", "커피"], color: "#6F4E37", summary: "바다와 함께하는 커피", celeb: "바리스타", imageUrl: "https://placehold.co/300x200/6F4E37/fff?text=Coffee" },
-            { id: 7, name: "제주 유채꽃 축제", lat: 33.394, lng: 126.758, location: "제주 서귀포", country: "Korea", region: "제주", tags: ["자연"], color: "#FFFF00", summary: "봄을 알리는 노란 물결", celeb: "없음", imageUrl: "https://placehold.co/300x200/FFFF00/000?text=Flower" },
-            { id: 8, name: "진해 군항제", lat: 35.148, lng: 128.663, location: "경남 창원", country: "Korea", region: "경남", tags: ["자연", "벚꽃"], color: "#FFB7C5", summary: "국내 최대 벚꽃 축제", celeb: "군악대", imageUrl: "https://placehold.co/300x200/FFB7C5/000?text=Cherry" },
-            // ... (데이터 길이상 일부 생략, 실제 구현시 24개 채움)
+            // 한국 - 서울/경기
+            { id: 1, name: "서울 불꽃축제", lat: 37.528, lng: 126.936, location: "서울 여의도", country: "Korea", region: "서울", tags: ["문화", "야경"], color: "#FF4500", summary: "한강의 가을밤을 수놓는 국내 최대 불꽃쇼", celeb: "불꽃 디자이너", imageUrl: "https://placehold.co/400x300/FF4500/fff?text=Seoul+Firework" },
+            { id: 2, name: "에버랜드 튤립 축제", lat: 37.294, lng: 127.202, location: "경기 용인", country: "Korea", region: "경기", tags: ["자연"], color: "#FF69B4", summary: "봄의 전령사 튤립 100만 송이", celeb: "없음", imageUrl: "https://placehold.co/400x300/FF69B4/fff?text=Tulip" },
             
-            // 일본 데이터 (13개)
-            { id: 20, name: "도쿄 간다 마츠리", lat: 35.700, lng: 139.771, location: "일본 도쿄", country: "Japan", region: "도쿄", tags: ["문화"], color: "#FF0000", summary: "에도 3대 마츠리", celeb: "없음", imageUrl: "https://placehold.co/300x200/FF0000/fff?text=Kanda" },
-            { id: 21, name: "오사카 텐진 마츠리", lat: 34.696, lng: 135.519, location: "일본 오사카", country: "Japan", region: "오사카", tags: ["문화", "불꽃"], color: "#0000FF", summary: "천년의 역사, 뱃놀이와 불꽃", celeb: "없음", imageUrl: "https://placehold.co/300x200/0000FF/fff?text=Tenjin" },
-            { id: 22, name: "교토 기온 마츠리", lat: 35.003, lng: 135.777, location: "일본 교토", country: "Japan", region: "교토", tags: ["문화"], color: "#800080", summary: "교토의 여름을 알리는 축제", celeb: "없음", imageUrl: "https://placehold.co/300x200/800080/fff?text=Gion" },
-            { id: 23, name: "삿포로 눈 축제", lat: 43.060, lng: 141.353, location: "일본 홋카이도", country: "Japan", region: "홋카이도", tags: ["자연", "겨울"], color: "#E0FFFF", summary: "세계적인 눈과 얼음의 축제", celeb: "없음", imageUrl: "https://placehold.co/300x200/E0FFFF/000?text=Snow" },
-            { id: 24, name: "후쿠오카 돈타쿠", lat: 33.593, lng: 130.404, location: "일본 후쿠오카", country: "Japan", region: "후쿠오카", tags: ["문화", "퍼레이드"], color: "#FFA07A", summary: "시민들이 참여하는 대규모 퍼레이드", celeb: "지역 아이돌", imageUrl: "https://placehold.co/300x200/FFA07A/fff?text=Dontaku" },
-            { id: 25, name: "오키나와 에이사", lat: 26.334, lng: 127.801, location: "일본 오키나와", country: "Japan", region: "오키나와", tags: ["문화", "음악"], color: "#FF4500", summary: "오키나와 전통 북춤 축제", celeb: "청년회", imageUrl: "https://placehold.co/300x200/FF4500/fff?text=Eisa" }
-        ];
-
-        // 지역별 경계 파라미터 (간이 Bounds) - Glow Effect 용
-        const regionBoundaryParams = {
-            '충남': [[35.9, 125.5], [37.1, 127.6]],
-            '서울': [[37.4, 126.7], [37.7, 127.2]],
-            '부산': [[34.8, 128.7], [35.4, 129.3]],
-            '도쿄': [[35.5, 138.9], [35.9, 139.9]],
-            '오사카': [[34.2, 135.0], [35.0, 135.8]],
-            // 필요 시 추가...
-        };
-
-        // --- 2. 전역 변수 ---
-        let map;
-        let markersPlugin; // MarkerClusterGroup
-        let currentCountry = 'Korea';
-        let currentRegionFilter = '전체';
-        let currentTagFilter = '전체';
-        let detailSheet;
-        let activeGlowLayer = null; // 현재 켜진 경계 Glow
-        let isAltPressed = false;
-        let dragStart = null;
-        let selectionBoxDiv = document.getElementById('selection-box');
-        let selectedMarkers = []; // 드래그로 선택된 마커 ID 목록
-        let searchHistory = JSON.parse(localStorage.getItem('eventMapHistory')) || [];
-
-        // --- 3. 초기화 (window.onload) ---
-        window.onload = function() {
-            detailSheet = document.getElementById('detail-sheet');
+            // 강원
+            { id: 3, name: "화천 산천어축제", lat: 38.106, lng: 127.709, location: "강원 화천", country: "Korea", region: "강원", tags: ["자연", "겨울"], color: "#1E90FF", summary: "얼음 위에서 즐기는 산천어 낚시", celeb: "없음", imageUrl: "https://placehold.co/400x300/1E90FF/fff?text=IceFishing" },
+            { id: 4, name: "강릉 커피축제", lat: 37.773, lng: 128.948, location: "강원 강릉", country: "Korea", region: "강원", tags: ["음식", "문화"], color: "#6F4E37", summary: "바다와 함께하는 커피 로드 탐방", celeb: "바리스타", imageUrl: "https://placehold.co/400x300/6F4E37/fff?text=Coffee" },
+            { id: 5, name: "태백산 눈축제", lat: 37.164, lng: 128.986, location: "강원 태백", country: "Korea", region: "강원", tags: ["자연", "겨울"], color: "#E0FFFF", summary: "대형 눈조각과 겨울 체험", celeb: "없음", imageUrl: "https://placehold.co/400x300/E0FFFF/000?text=SnowFest" },
             
-            // 3.1 맵 초기화
-            map = L.map('map', {
-                zoomControl: false, // 줌 컨트롤 위치 이동 등을 위해 일단 끔
-                preferCanvas: true
-            }).setView([35.9, 127.5], 7);
-
-            L.control.zoom({ position: 'topright' }).addTo(map);
-
-            // 3.2 타일 레이어 (OSM) - CSS로 다크모드 반전됨
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                maxZoom: 18,
-                attribution: '&copy; OpenStreetMap'
-            }).addTo(map);
-
-            // 3.3 클러스터 그룹 초기화 (빨간색 강조 로직 포함)
-            markersPlugin = L.markerClusterGroup({
-                iconCreateFunction: function(cluster) {
-                    const count = cluster.getChildCount();
-                    let c = ' marker-cluster-';
-                    if (count < 5) { c += 'small'; }
-                    else if (count < 10) { c += 'medium'; }
-                    else { c += 'large cluster-high-density'; } // 10개 이상이면 빨간색(Dense)
-
-                    return new L.DivIcon({ 
-                        html: '<div><span>' + count + '</span></div>', 
-                        className: 'marker-cluster' + c, 
-                        iconSize: new L.Point(40, 40) 
-                    });
-                },
-                disableClusteringAtZoom: 16
-            });
-            map.addLayer(markersPlugin);
-
-            // 3.4 이벤트 연결
-            document.getElementById('close-button').addEventListener('click', hideDetailSheet);
-            
-            // 검색창 이벤트
-            const searchInput = document.getElementById('search-input');
-            searchInput.addEventListener('focus', showSearchHistory);
-            searchInput.addEventListener('blur', () => setTimeout(hideSearchHistory, 200));
-            searchInput.addEventListener('input', handleSearch);
-            searchInput.addEventListener('keyup', (e) => {
-                if(e.key === 'Enter') saveSearchHistory(e.target.value);
-            });
-
-            // Alt 키 이벤트 (드래그 선택)
-            window.addEventListener('keydown', (e) => {
-                if (e.key === 'Alt') {
-                    isAltPressed = true;
-                    map.dragging.disable(); // 맵 드래그 방지
-                    document.getElementById('map').style.cursor = 'crosshair';
-                }
-            });
-            window.addEventListener('keyup', (e) => {
-                if (e.key === 'Alt') {
-                    isAltPressed = false;
-                    map.dragging.enable();
-                    document.getElementById('map').style.cursor = '';
-                    // Alt 떼면 드래그 박스 숨김
-                    selectionBoxDiv.classList.add('hidden');
-                }
-            });
-
-            // 맵 마우스 이벤트 (드래그 박스)
-            map.getContainer().addEventListener('mousedown', onMapMouseDown);
-            map.getContainer().addEventListener('mousemove', onMapMouseMove);
-            map.getContainer().addEventListener('mouseup', onMapMouseUp);
-            // 맵 클릭 시 선택 해제
-            map.on('click', deselectAll);
-
-            // 초기 렌더링
-            setCountry('Korea'); // 한국 기본
-            renderSearchHistory();
-        };
-
-        // --- 4. 로직 구현 ---
-
-        // 4.1 데이터 로드 및 마커 표시
-        function loadEventMarkers() {
-            markersPlugin.clearLayers(); // 기존 마커 제거
-
-            const filtered = mockEvents.filter(e => {
-                const countryMatch = e.country === currentCountry;
-                const regionMatch = currentRegionFilter === '전체' || e.region === currentRegionFilter;
-                const tagMatch = currentTagFilter === '전체' || e.tags.includes(currentTagFilter);
-                return countryMatch && regionMatch && tagMatch;
-            });
-
-            filtered.forEach(event => {
-                // HTML 마커 생성
-                const customIcon = L.divIcon({
-                    className: 'custom-event-marker',
-                    html: `
-                        <div class="event-marker" id="marker-${event.id}" style="border-color: ${event.color};">
-                            <img src="${event.imageUrl}" alt="${event.name}" onerror="this.src='https://placehold.co/64x64/333/fff?text=E'"/>
-                        </div>
-                    `,
-                    iconSize: [64, 64],
-                    iconAnchor: [32, 64]
-                });
-
-                const marker = L.marker([event.lat, event.lng], { icon: customIcon, eventId: event.id });
-                
-                // 마커 클릭 이벤트
-                marker.on('click', (e) => {
-                    L.DomEvent.stopPropagation(e); // 맵 클릭 전파 방지
-                    showDetailSheet(event);
-                });
-
-                markersPlugin.addLayer(marker);
-            });
-        }
-
-        // 4.2 국가/지역 탭 로직
-        function setCountry(country) {
-            currentCountry = country;
-            currentRegionFilter = '전체';
-            
-            // 버튼 스타일 업데이트
-            document.getElementById('btn-korea').className = country === 'Korea' 
-                ? "px-4 py-1.5 rounded-full text-sm font-bold bg-primary-500 text-white transition shadow-lg" 
-                : "px-4 py-1.5 rounded-full text-sm font-bold bg-gray-700 text-gray-300 hover:bg-gray-600 transition";
-            document.getElementById('btn-japan').className = country === 'Japan' 
-                ? "px-4 py-1.5 rounded-full text-sm font-bold bg-primary-500 text-white transition shadow-lg" 
-                : "px-4 py-1.5 rounded-full text-sm font-bold bg-gray-700 text-gray-300 hover:bg-gray-600 transition";
-
-            // 지역 목록 업데이트
-            const regionListDiv = document.getElementById('region-list');
-            const regions = country === 'Korea' 
-                ? ['전체', '서울', '경기', '강원', '충남', '충북', '전북', '전남', '경북', '경남', '부산', '제주']
-                : ['전체', '도쿄', '오사카', '교토', '후쿠오카', '홋카이도', '오키나와'];
-            
-            regionListDiv.innerHTML = regions.map(r => 
-                `<button onclick="setRegion('${r}')" class="px-3 py-1 rounded border border-gray-600 text-xs text-gray-300 hover:bg-gray-700 hover:text-white transition ${r === '전체' ? 'bg-gray-700 text-white' : ''}">${r}</button>`
-            ).join('');
-
-            // 뷰포트 이동
-            if (country === 'Korea') map.setView([35.9, 127.5], 7);
-            else map.setView([36.2, 138.2], 5); // 일본 전체 뷰
-
-            loadEventMarkers();
-        }
-
-        function setRegion(region) {
-            currentRegionFilter = region;
-            
-            // 버튼 활성화 스타일 처리 (간단히 다시 그리기)
-            const buttons = document.getElementById('region-list').querySelectorAll('button');
-            buttons.forEach(btn => {
-                if (btn.textContent === region) {
-                    btn.classList.add('bg-primary-500', 'text-white', 'border-transparent');
-                    btn.classList.remove('bg-gray-700', 'text-gray-300');
-                } else {
-                    btn.classList.remove('bg-primary-500', 'text-white', 'border-transparent');
-                }
-            });
-
-            // 지역 발광 효과 (Glow)
-            showRegionGlow(region);
-
-            loadEventMarkers();
-        }
-
-        // 4.3 태그 필터링
-        function filterByTag(tag) {
-            currentTagFilter = tag;
-            loadEventMarkers();
-        }
-
-        // 4.4 지역 경계 발광 (Parametric Glow)
-        function showRegionGlow(region) {
-            if (activeGlowLayer) {
-                map.removeLayer(activeGlowLayer);
-                activeGlowLayer = null;
-            }
-
-            if (region === '전체' || !regionBoundaryParams[region]) return;
-
-            const bounds = regionBoundaryParams[region]; // [[lat1, lng1], [lat2, lng2]]
-            
-            // L.rectangle로 경계 생성 후 CSS 클래스 부여
-            activeGlowLayer = L.rectangle(bounds, {
-                className: 'region-glow-path', // CSS Animation Class
-                color: '#ffeb3b',
-                weight: 2,
-                fillOpacity: 0
-            }).addTo(map);
-
-            map.fitBounds(bounds, { padding: [50, 50], animate: true, duration: 1.5 });
-        }
-
-        // 4.5 드래그 선택 (Alt + Drag)
-        function onMapMouseDown(e) {
-            if (!isAltPressed) return;
-            dragStart = e;
-            selectionBoxDiv.classList.remove('hidden');
-            selectionBoxDiv.style.left = e.clientX + 'px';
-            selectionBoxDiv.style.top = e.clientY + 'px';
-            selectionBoxDiv.style.width = '0px';
-            selectionBoxDiv.style.height = '0px';
-        }
-
-        function onMapMouseMove(e) {
-            if (!isAltPressed || !dragStart) return;
-            
-            const x = Math.min(e.clientX, dragStart.clientX);
-            const y = Math.min(e.clientY, dragStart.clientY);
-            const w = Math.abs(e.clientX - dragStart.clientX);
-            const h = Math.abs(e.clientY - dragStart.clientY);
-
-            selectionBoxDiv.style.left = x + 'px';
-            selectionBoxDiv.style.top = y + 'px';
-            selectionBoxDiv.style.width = w + 'px';
-            selectionBoxDiv.style.height = h + 'px';
-        }
-
-        function onMapMouseUp(e) {
-            if (!isAltPressed || !dragStart) return;
-
-            // 드래그 박스 좌표를 LatLngBounds로 변환
-            const bounds = L.latLngBounds(
-                map.containerPointToLatLng([parseInt(selectionBoxDiv.style.top), parseInt(selectionBoxDiv.style.left)]),
-                map.containerPointToLatLng([
-                    parseInt(selectionBoxDiv.style.top) + parseInt(selectionBoxDiv.style.height), 
-                    parseInt(selectionBoxDiv.style.left) + parseInt(selectionBoxDiv.style.width)
-                ])
-            );
-
-            // 마커 선택 로직
-            markersPlugin.eachLayer(layer => {
-                if (bounds.contains(layer.getLatLng())) {
-                    const iconDiv = layer.getElement()?.querySelector('.event-marker');
-                    if (iconDiv) {
-                        iconDiv.classList.add('selected-marker');
-                        if (!selectedMarkers.includes(layer.options.eventId)) {
-                            selectedMarkers.push(layer.options.eventId);
-                        }
-                    }
-                }
-            });
-
-            console.log("Selected IDs:", selectedMarkers);
-            dragStart = null;
-            // selectionBoxDiv.classList.add('hidden'); // 박스는 남겨둘 수도 있고 숨길 수도 있음. 여기선 숨김.
-        }
-
-        function deselectAll() {
-            if (isAltPressed) return; // Alt 누른 상태면 해제 안 함
-            selectedMarkers = [];
-            document.querySelectorAll('.selected-marker').forEach(el => el.classList.remove('selected-marker'));
-            if (activeGlowLayer) { // 배경 클릭 시 글로우도 끌지 여부
-                // map.removeLayer(activeGlowLayer); 
-                // activeGlowLayer = null;
-            }
-        }
-
-        // 4.6 검색 및 기록
-        function handleSearch(e) {
-            const query = e.target.value.toLowerCase();
-            if (!query) {
-                loadEventMarkers(); // 초기화
-                return;
-            }
-            // 검색 필터링 (이름, 지역, 태그)
-            markersPlugin.clearLayers();
-            const results = mockEvents.filter(ev => 
-                ev.name.toLowerCase().includes(query) || 
-                ev.region.includes(query) || 
-                ev.tags.some(t => t.includes(query))
-            );
-            
-            results.forEach(ev => { /* 마커 재생성 로직 (생략 - loadEventMarkers 재활용 권장) */ });
-            // 간단히 loadEventMarkers를 수정하여 검색어를 받게 하는 것이 좋으나, 여기선 생략
-        }
-
-        function saveSearchHistory(keyword) {
-            if (!keyword) return;
-            searchHistory = [keyword, ...searchHistory.filter(k => k !== keyword)].slice(0, 5);
-            localStorage.setItem('eventMapHistory', JSON.stringify(searchHistory));
-            renderSearchHistory();
-        }
-
-        function renderSearchHistory() {
-            const list = document.getElementById('history-list');
-            list.innerHTML = searchHistory.map(k => 
-                `<li class="px-4 py-2 hover:bg-gray-700 cursor-pointer border-b border-gray-800 last:border-0" onclick="applySearch('${k}')">${k}</li>`
-            ).join('');
-        }
-
-        function showSearchHistory() { document.getElementById('search-history').classList.remove('hidden'); }
-        function hideSearchHistory() { document.getElementById('search-history').classList.add('hidden'); }
-        function applySearch(k) {
-            document.getElementById('search-input').value = k;
-            // 검색 로직 트리거
-        }
-
-        // 4.7 상세 시트 (UI 업데이트)
-        function showDetailSheet(eventData) {
-            document.getElementById('sheet-title').innerText = eventData.name;
-            document.getElementById('sheet-summary').innerText = eventData.summary;
-            document.getElementById('sheet-celeb').innerText = eventData.celeb || "정보 없음";
-            document.getElementById('sheet-image').src = eventData.imageUrl;
-            
-            // 태그 표시
-            const tagsContainer = document.getElementById('sheet-tags');
-            tagsContainer.innerHTML = eventData.tags.map(t => `<span class="px-2 py-0.5 rounded bg-gray-700 text-xs text-gray-300">#${t}</span>`).join('');
-
-            detailSheet.classList.add('active');
-            map.panTo([eventData.lat, eventData.lng], { animate: true, duration: 1 });
-        }
-
-        function hideDetailSheet() {
-            detailSheet.classList.remove('active');
-        }
-
-    </script>
-</body>
-</html>
+            // 충청
+            { id: 6, name: "보령 머드축제", lat: 36.315, lng: 126.541, location: "충남 보령", country: "Korea", region: "충남", tags: ["문화", "여름"], color: "#A0522D", summary: "글로벌 머드 체험과 K-POP", celeb: "K-POP 아이돌", imageUrl: "https://placehold.co/400x300/A0522D/fff?text=Mud" },
+            { id: 7, name: "천안 빵 페스티벌", lat: 36.814, lng: 127.113, location: "충남 천안", country: "Korea", region: "충남", tags: ["음식"], color: "#50bdae", summary: "전국 유명 빵집 집결", celeb: "김제빵", imageUrl: "https://placehold.co/400x300/50bdae/fff?text=Bread" },
+            { id: 8, name: "공주 백제문화제", lat: 36.452, lng: 127.113, location: "충남 공주", country: "Korea", region: "충남", tags: ["문화", "역사"], color: "#7a0019", summary: "찬란한 백제 왕조의 역사 재현", celeb: "역사 강사", imageUrl: "https://placehold.co/400x300/7a0019/fff?text=Baekje" 
