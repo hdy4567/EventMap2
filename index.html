@@ -1,13 +1,15 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html lang="ko" class="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>전국 주요 행사 지도</title>
+    <title>전국 주요 행사 지도 (다크모드 + 필터링)</title>
+    
     <!-- Tailwind CSS CDN 로드 -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
+            darkMode: 'class', // 다크모드 활성화
             theme: {
                 extend: {
                     colors: {
@@ -21,8 +23,13 @@
             }
         }
     </script>
-    <!-- Leaflet CSS 로드 (지도 라이브러리) -->
+    
+    <!-- Leaflet CSS 로드 -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    
+    <!-- Leaflet MarkerCluster CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
     
     <style>
         /* 지도 전체 화면 스타일 */
@@ -38,7 +45,7 @@
             height: 64px;
             border-radius: 50%;
             overflow: hidden;
-            border: 4px solid #10b981; /* primary-500 */
+            border: 4px solid #10b981;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
             cursor: pointer;
             transition: transform 0.2s;
@@ -57,26 +64,76 @@
         /* 하단 탭 스타일 */
         #detail-sheet {
             transition: transform 0.5s cubic-bezier(0.19, 1, 0.22, 1);
-            transform: translateY(100%); /* 기본적으로 숨겨진 상태 */
-            z-index: 50; /* 지도보다 위에 위치 */
+            transform: translateY(100%);
+            z-index: 50;
         }
 
         #detail-sheet.active {
-            transform: translateY(0); /* 활성화 시 위로 올라옴 */
+            transform: translateY(0);
+        }
+
+        /* 상단 필터 및 검색 패널 */
+        #control-panel {
+            z-index: 40;
+        }
+
+        /* 다크모드 스크롤바 스타일링 */
+        .dark ::-webkit-scrollbar {
+            width: 8px;
+        }
+        .dark ::-webkit-scrollbar-track {
+            background: #1f2937;
+        }
+        .dark ::-webkit-scrollbar-thumb {
+            background: #4b5563;
+            border-radius: 4px;
         }
     </style>
 </head>
-<body class="bg-gray-50 overflow-hidden">
+<body class="bg-gray-50 dark:bg-gray-900 overflow-hidden">
+
+    <!-- 상단 컨트롤 패널 (검색 + 필터) -->
+    <div id="control-panel" class="fixed top-0 left-0 right-0 bg-white dark:bg-gray-800 shadow-lg p-4 flex flex-col md:flex-row gap-3">
+        
+        <!-- 검색창 -->
+        <div class="flex-1">
+            <input 
+                type="text" 
+                id="search-input" 
+                placeholder="이벤트명 또는 지역으로 검색..." 
+                class="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+            />
+        </div>
+
+        <!-- 지역 필터 버튼 -->
+        <div class="flex gap-2 flex-wrap">
+            <button class="filter-btn region-filter px-4 py-2 rounded-lg bg-primary-500 text-white font-semibold hover:bg-primary-600 transition" data-region="all">전체</button>
+            <button class="filter-btn region-filter px-4 py-2 rounded-lg bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition" data-region="충남">충남</button>
+            <button class="filter-btn region-filter px-4 py-2 rounded-lg bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition" data-region="충북">충북</button>
+        </div>
+
+        <!-- 테마 필터 버튼 -->
+        <div class="flex gap-2 flex-wrap">
+            <button class="filter-btn theme-filter px-4 py-2 rounded-lg bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition" data-theme="음식">🍔 음식</button>
+            <button class="filter-btn theme-filter px-4 py-2 rounded-lg bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition" data-theme="문화">🎭 문화</button>
+            <button class="filter-btn theme-filter px-4 py-2 rounded-lg bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition" data-theme="음악">🎵 음악</button>
+        </div>
+
+        <!-- 커스텀 라벨 추가 버튼 -->
+        <button id="add-label-btn" class="px-4 py-2 rounded-lg bg-purple-500 text-white font-semibold hover:bg-purple-600 transition">
+            ➕ 라벨 추가
+        </button>
+    </div>
 
     <!-- 지도 컨테이너 -->
-    <div id="map" class="relative"></div>
+    <div id="map" class="relative mt-20"></div>
 
     <!-- 하단 이벤트 상세 정보 탭 (Bottom Sheet) -->
-    <div id="detail-sheet" class="fixed bottom-0 left-0 right-0 max-h-[80vh] bg-white rounded-t-3xl shadow-2xl p-6 md:p-8 flex flex-col">
+    <div id="detail-sheet" class="fixed bottom-0 left-0 right-0 max-h-[80vh] bg-white dark:bg-gray-800 rounded-t-3xl shadow-2xl p-6 md:p-8 flex flex-col">
         
         <!-- 닫기 버튼 및 제목 -->
-        <div class="flex justify-between items-center mb-4 border-b pb-3">
-            <h2 id="sheet-title" class="text-2xl font-extrabold text-gray-900"></h2>
+        <div class="flex justify-between items-center mb-4 border-b border-gray-200 dark:border-gray-700 pb-3">
+            <h2 id="sheet-title" class="text-2xl font-extrabold text-gray-900 dark:text-white"></h2>
             <button id="close-button" class="flex items-center space-x-1 px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white font-semibold rounded-full shadow-lg transition duration-200">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                     <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm-1-9V6a1 1 0 112 0v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3z" clip-rule="evenodd" />
@@ -89,102 +146,133 @@
         <div class="overflow-y-auto pb-4 flex-grow">
             <!-- 요약 정보 -->
             <div class="mb-6">
-                <h3 class="text-xl font-bold mb-2 text-primary-600">행사 요약 정보</h3>
-                <p id="sheet-summary" class="text-gray-700 leading-relaxed whitespace-pre-line text-lg"></p>
+                <h3 class="text-xl font-bold mb-2 text-primary-600 dark:text-primary-400">행사 요약 정보</h3>
+                <p id="sheet-summary" class="text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-line text-lg"></p>
             </div>
 
             <!-- 연예인/게스트 정보 -->
+            <div class="mb-6">
+                <h3 class="text-xl font-bold mb-2 text-primary-600 dark:text-primary-400">참가 연예인/게스트</h3>
+                <p id="sheet-celeb" class="text-gray-700 dark:text-gray-300 leading-relaxed text-lg"></p>
+            </div>
+
+            <!-- 카테고리 태그 -->
             <div>
-                <h3 class="text-xl font-bold mb-2 text-primary-600">참가 연예인/게스트</h3>
-                <p id="sheet-celeb" class="text-gray-700 leading-relaxed text-lg"></p>
+                <h3 class="text-xl font-bold mb-2 text-primary-600 dark:text-primary-400">카테고리</h3>
+                <div id="sheet-categories" class="flex gap-2 flex-wrap"></div>
             </div>
         </div>
     </div>
     
-    <!-- Leaflet JS 로드: Integrity 속성을 제거하고 스크립트 실행 직전으로 이동 -->
+    <!-- Leaflet JS 로드 -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+    
+    <!-- Leaflet MarkerCluster JS -->
+    <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
 
     <script>
-        // API 키는 필요 없으므로 빈 문자열로 둡니다.
         const apiKey = ""; 
 
-        // 1. 가상 이벤트 데이터 (충남 + 충북 추가)
+        // 1. 가상 이벤트 데이터 (카테고리 추가)
         const mockEvents = [
             // --- 충남 지역 이벤트 ---
-            { id: 1, name: "천안 빵 페스티벌", lat: 36.814, lng: 127.113, location: "천안시 동남구", 
-              summary: "전국 유명 베이커리 총집합! 다양한 빵과 디저트를 즐겨보세요.\n가족 단위 방문객에게 인기가 많습니다.\n(가상 데이터)", 
-              celeb: "유명 셰프 '김제빵', 파티시에 '이달콤'", 
-              imageUrl: "https://placehold.co/100x100/50bdae/ffffff?text=빵축제",
-              color: "#50bdae"
+            { 
+                id: 1, name: "천안 빵 페스티벌", lat: 36.814, lng: 127.113, 
+                location: "천안시 동남구", region: "충남", category: "음식",
+                summary: "전국 유명 베이커리 총집합! 다양한 빵과 디저트를 즐겨보세요.\n가족 단위 방문객에게 인기가 많습니다.\n(가상 데이터)", 
+                celeb: "유명 셰프 '김제빵', 파티시에 '이달콤'", 
+                imageUrl: "https://placehold.co/100x100/50bdae/ffffff?text=빵축제",
+                color: "#50bdae",
+                customLabels: []
             },
-            { id: 2, name: "보령 머드 축제", lat: 36.315, lng: 126.541, location: "보령시 대천 해수욕장", 
-              summary: "세계적인 K-팝 스타들과 함께하는 짜릿한 머드 체험.\n신나는 공연과 이벤트가 가득합니다.\n여름 대표 축제! (가상 데이터)", 
-              celeb: "아이돌 그룹 '블랙문', 가수 '제이홉' 외 다수", 
-              imageUrl: "https://placehold.co/100x100/A0522D/ffffff?text=머드축제",
-              color: "#A0522D"
+            { 
+                id: 2, name: "보령 머드 축제", lat: 36.315, lng: 126.541, 
+                location: "보령시 대천 해수욕장", region: "충남", category: "음악",
+                summary: "세계적인 K-팝 스타들과 함께하는 짜릿한 머드 체험.\n신나는 공연과 이벤트가 가득합니다.\n여름 대표 축제! (가상 데이터)", 
+                celeb: "아이돌 그룹 '블랙문', 가수 '제이홉' 외 다수", 
+                imageUrl: "https://placehold.co/100x100/A0522D/ffffff?text=머드축제",
+                color: "#A0522D",
+                customLabels: []
             },
-            { id: 3, name: "공주 백제 문화제", lat: 36.452, lng: 127.113, location: "공주시 금강 신관공원", 
-              summary: "찬란했던 백제 왕조의 역사와 문화를 체험하는 대규모 축제.\n전통 의상 체험 및 퍼레이드가 진행됩니다.\n(가상 데이터)", 
-              celeb: "역사 강사 '최사인', 국악인 '안소리'", 
-              imageUrl: "https://placehold.co/100x100/7a0019/ffffff?text=백제문화",
-              color: "#7a0019"
+            { 
+                id: 3, name: "공주 백제 문화제", lat: 36.452, lng: 127.113, 
+                location: "공주시 금강 신관공원", region: "충남", category: "문화",
+                summary: "찬란했던 백제 왕조의 역사와 문화를 체험하는 대규모 축제.\n전통 의상 체험 및 퍼레이드가 진행됩니다.\n(가상 데이터)", 
+                celeb: "역사 강사 '최사인', 국악인 '안소리'", 
+                imageUrl: "https://placehold.co/100x100/7a0019/ffffff?text=백제문화",
+                color: "#7a0019",
+                customLabels: []
             },
-            { id: 4, name: "아산 은행나무길 축제", lat: 36.786, lng: 127.009, location: "아산시 염치읍 은행나무길", 
-              summary: "가을 단풍으로 물든 아름다운 은행나무길을 걷는 힐링 축제.\n지역 예술가들의 버스킹 공연이 펼쳐집니다.\n(가상 데이터)", 
-              celeb: "인디 밴드 '가을하늘', 싱어송라이터 '박감성'", 
-              imageUrl: "https://placehold.co/100x100/FFD700/000000?text=은행축제",
-              color: "#FFD700"
+            { 
+                id: 4, name: "아산 은행나무길 축제", lat: 36.786, lng: 127.009, 
+                location: "아산시 염치읍 은행나무길", region: "충남", category: "문화",
+                summary: "가을 단풍으로 물든 아름다운 은행나무길을 걷는 힐링 축제.\n지역 예술가들의 버스킹 공연이 펼쳐집니다.\n(가상 데이터)", 
+                celeb: "인디 밴드 '가을하늘', 싱어송라이터 '박감성'", 
+                imageUrl: "https://placehold.co/100x100/FFD700/000000?text=은행축제",
+                color: "#FFD700",
+                customLabels: []
             },
             // --- 충북 지역 이벤트 추가 ---
-            { id: 5, name: "청주 직지 코리아", lat: 36.635, lng: 127.491, location: "청주시 청주 예술의전당", 
-              summary: "세계에서 가장 오래된 금속활자본 '직지'를 기념하는 국제 축제.\n인쇄 문화와 첨단 기술이 융합된 전시가 열립니다.\n유네스코 세계기록유산! (가상 데이터)", 
-              celeb: "역사학자 '박고전', 미술 작가 '한지화'", 
-              imageUrl: "https://placehold.co/100x100/3498db/ffffff?text=직지축제",
-              color: "#3498db"
+            { 
+                id: 5, name: "청주 직지 코리아", lat: 36.635, lng: 127.491, 
+                location: "청주시 청주 예술의전당", region: "충북", category: "문화",
+                summary: "세계에서 가장 오래된 금속활자본 '직지'를 기념하는 국제 축제.\n인쇄 문화와 첨단 기술이 융합된 전시가 열립니다.\n유네스코 세계기록유산! (가상 데이터)", 
+                celeb: "역사학자 '박고전', 미술 작가 '한지화'", 
+                imageUrl: "https://placehold.co/100x100/3498db/ffffff?text=직지축제",
+                color: "#3498db",
+                customLabels: []
             },
-            { id: 6, name: "단양 마늘 축제", lat: 36.980, lng: 128.360, location: "단양군 단양읍 남한강변", 
-              summary: "단양 특산품인 마늘을 주제로 한 건강 축제.\n마늘 요리 경연대회와 각종 체험 프로그램이 풍성합니다.\n(가상 데이터)", 
-              celeb: "농업 전문가 '최농부', 푸드 스타일리스트 '이맛나'", 
-              imageUrl: "https://placehold.co/100x100/8c7e00/ffffff?text=마늘축제",
-              color: "#8c7e00"
+            { 
+                id: 6, name: "단양 마늘 축제", lat: 36.980, lng: 128.360, 
+                location: "단양군 단양읍 남한강변", region: "충북", category: "음식",
+                summary: "단양 특산품인 마늘을 주제로 한 건강 축제.\n마늘 요리 경연대회와 각종 체험 프로그램이 풍성합니다.\n(가상 데이터)", 
+                celeb: "농업 전문가 '최농부', 푸드 스타일리스트 '이맛나'", 
+                imageUrl: "https://placehold.co/100x100/8c7e00/ffffff?text=마늘축제",
+                color: "#8c7e00",
+                customLabels: []
             },
-            { id: 7, name: "제천 국제 음악 영화제", lat: 37.130, lng: 128.205, location: "제천시 청풍호반", 
-              summary: "음악을 매개로 하는 국내 유일의 영화제.\n아름다운 호반에서 펼쳐지는 야외 상영과 공연이 백미입니다.\n(가상 데이터)", 
-              celeb: "영화감독 '김시네', 재즈 뮤지션 '트리오 블루'", 
-              imageUrl: "https://placehold.co/100x100/e74c3c/ffffff?text=음악영화",
-              color: "#e74c3c"
+            { 
+                id: 7, name: "제천 국제 음악 영화제", lat: 37.130, lng: 128.205, 
+                location: "제천시 청풍호반", region: "충북", category: "음악",
+                summary: "음악을 매개로 하는 국내 유일의 영화제.\n아름다운 호반에서 펼쳐지는 야외 상영과 공연이 백미입니다.\n(가상 데이터)", 
+                celeb: "영화감독 '김시네', 재즈 뮤지션 '트리오 블루'", 
+                imageUrl: "https://placehold.co/100x100/e74c3c/ffffff?text=음악영화",
+                color: "#e74c3c",
+                customLabels: []
             },
-            { id: 8, name: "괴산 고추 축제", lat: 36.816, lng: 127.817, location: "괴산군 괴산읍 동진천변", 
-              summary: "괴산의 명물인 청결 고추를 홍보하는 지역 축제.\n고추 먹기 대회, 물고기 잡기 등 재미있는 이벤트가 많습니다.\n(가상 데이터)", 
-              celeb: "개그맨 '유재밌', 트로트 가수 '송가인'", 
-              imageUrl: "https://placehold.co/100x100/c0392b/ffffff?text=고추축제",
-              color: "#c0392b"
+            { 
+                id: 8, name: "괴산 고추 축제", lat: 36.816, lng: 127.817, 
+                location: "괴산군 괴산읍 동진천변", region: "충북", category: "음식",
+                summary: "괴산의 명물인 청결 고추를 홍보하는 지역 축제.\n고추 먹기 대회, 물고기 잡기 등 재미있는 이벤트가 많습니다.\n(가상 데이터)", 
+                celeb: "개그맨 '유재밌', 트로트 가수 '송가인'", 
+                imageUrl: "https://placehold.co/100x100/c0392b/ffffff?text=고추축제",
+                color: "#c0392b",
+                customLabels: []
             }
         ];
 
         let map;
-        let detailSheet; // 초기화 함수 내에서 할당
-        let closeButton; // 초기화 함수 내에서 할당
+        let detailSheet;
+        let closeButton;
+        let markerClusterGroup; // 마커 클러스터 그룹
+        let allMarkers = []; // 모든 마커 저장
+        let activeFilters = { region: 'all', theme: null, search: '' };
 
         // 2. 지도 초기화 및 대한민국 지역 띄우기
         function initializeMap() {
-            // DOM 요소에 안전하게 접근합니다.
             detailSheet = document.getElementById('detail-sheet');
             closeButton = document.getElementById('close-button');
 
-            // Leaflet 로드 확인
             if (typeof L === 'undefined' || !L.map) {
                  console.error("Leaflet is still not loaded properly. Cannot initialize map.");
                  return; 
             }
 
-            // 대한민국 중심 좌표 (전국 범위)
             const koreaCenter = [35.9, 127.5]; 
-            const initialZoom = 7; // 전국을 보여주기 위해 줌 레벨 조정
+            const initialZoom = 7;
 
             map = L.map('map').setView(koreaCenter, initialZoom);
             
-            // 디버깅: 지도가 성공적으로 초기화되고 타일을 로드하는지 확인
             map.on('tileloadstart', function() {
                 console.log('Map tile loading started.');
             });
@@ -192,24 +280,37 @@
                 console.log('Map loaded successfully.');
             });
 
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            // 다크모드 타일 레이어 (어두운 테마)
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
                 maxZoom: 19,
-                attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
             }).addTo(map);
+
+            // 마커 클러스터 그룹 초기화
+            markerClusterGroup = L.markerClusterGroup({
+                maxClusterRadius: 60,
+                spiderfyOnMaxZoom: true,
+                showCoverageOnHover: false
+            });
+            map.addLayer(markerClusterGroup);
 
             loadEventMarkers();
             
-            // 닫기 버튼 이벤트 리스너 추가
             if (closeButton) {
                 closeButton.addEventListener('click', hideDetailSheet);
             }
+
+            // 필터 및 검색 이벤트 리스너
+            setupFilterListeners();
         }
 
         // 3. 이벤트 마커 표시
-        function loadEventMarkers() {
-            // ... (기존 마커 로직 유지)
-            mockEvents.forEach(event => {
-                // 마커에 사용할 커스텀 아이콘 생성
+        function loadEventMarkers(filteredEvents = mockEvents) {
+            // 기존 마커 제거
+            markerClusterGroup.clearLayers();
+            allMarkers = [];
+
+            filteredEvents.forEach(event => {
                 const customIcon = L.divIcon({
                     className: 'custom-event-marker',
                     html: `
@@ -218,12 +319,11 @@
                                 onerror="this.onerror=null; this.src='https://placehold.co/100x100/${event.color.substring(1)}/ffffff?text=Event';" />
                         </div>
                     `,
-                    iconSize: [64, 64], // 아이콘 크기
-                    iconAnchor: [32, 64] // 마커 중심점 (64x64의 중앙 하단)
+                    iconSize: [64, 64],
+                    iconAnchor: [32, 64]
                 });
 
                 const marker = L.marker([event.lat, event.lng], { icon: customIcon })
-                    .addTo(map)
                     .bindTooltip(event.name, { 
                         permanent: true, 
                         direction: 'top',
@@ -231,28 +331,138 @@
                         className: 'bg-primary-500 text-white px-2 py-1 rounded-full shadow font-semibold whitespace-nowrap'
                     });
 
-                // 4. 마커 클릭 이벤트 리스너 추가
                 marker.on('click', () => {
                     showDetailSheet(event);
                 });
+
+                // 클러스터 그룹에 추가
+                markerClusterGroup.addLayer(marker);
+                allMarkers.push({ marker, event });
             });
         }
 
-        // 5. 상세 정보 탭 표시 및 내용 채우기
+        // 4. 필터 및 검색 리스너 설정
+        function setupFilterListeners() {
+            // 지역 필터
+            document.querySelectorAll('.region-filter').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    // 활성 상태 토글
+                    document.querySelectorAll('.region-filter').forEach(b => {
+                        b.classList.remove('bg-primary-500', 'text-white');
+                        b.classList.add('bg-gray-200', 'dark:bg-gray-700', 'text-gray-800', 'dark:text-gray-200');
+                    });
+                    this.classList.add('bg-primary-500', 'text-white');
+                    this.classList.remove('bg-gray-200', 'dark:bg-gray-700', 'text-gray-800', 'dark:text-gray-200');
+
+                    activeFilters.region = this.dataset.region;
+                    applyFilters();
+                });
+            });
+
+            // 테마 필터
+            document.querySelectorAll('.theme-filter').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const theme = this.dataset.theme;
+                    
+                    if (activeFilters.theme === theme) {
+                        // 이미 활성화된 테마 클릭 시 비활성화
+                        activeFilters.theme = null;
+                        this.classList.remove('bg-primary-500', 'text-white');
+                        this.classList.add('bg-gray-200', 'dark:bg-gray-700', 'text-gray-800', 'dark:text-gray-200');
+                    } else {
+                        // 다른 테마 필터 비활성화
+                        document.querySelectorAll('.theme-filter').forEach(b => {
+                            b.classList.remove('bg-primary-500', 'text-white');
+                            b.classList.add('bg-gray-200', 'dark:bg-gray-700', 'text-gray-800', 'dark:text-gray-200');
+                        });
+                        this.classList.add('bg-primary-500', 'text-white');
+                        this.classList.remove('bg-gray-200', 'dark:bg-gray-700', 'text-gray-800', 'dark:text-gray-200');
+                        activeFilters.theme = theme;
+                    }
+                    
+                    applyFilters();
+                });
+            });
+
+            // 검색 기능
+            const searchInput = document.getElementById('search-input');
+            searchInput.addEventListener('input', function() {
+                activeFilters.search = this.value.toLowerCase();
+                applyFilters();
+            });
+
+            // 커스텀 라벨 추가 버튼
+            document.getElementById('add-label-btn').addEventListener('click', function() {
+                const labelName = prompt('추가할 라벨 이름을 입력하세요:');
+                if (labelName && labelName.trim()) {
+                    alert(`"${labelName}" 라벨이 추가되었습니다! (현재는 시연용 알림입니다)`);
+                    // 실제 구현: 선택된 이벤트에 customLabels 배열에 추가
+                }
+            });
+        }
+
+        // 5. 필터 적용
+        function applyFilters() {
+            let filtered = mockEvents;
+
+            // 지역 필터
+            if (activeFilters.region !== 'all') {
+                filtered = filtered.filter(e => e.region === activeFilters.region);
+            }
+
+            // 테마 필터
+            if (activeFilters.theme) {
+                filtered = filtered.filter(e => e.category === activeFilters.theme);
+            }
+
+            // 검색 필터
+            if (activeFilters.search) {
+                filtered = filtered.filter(e => 
+                    e.name.toLowerCase().includes(activeFilters.search) ||
+                    e.location.toLowerCase().includes(activeFilters.search)
+                );
+            }
+
+            loadEventMarkers(filtered);
+        }
+
+        // 6. 상세 정보 탭 표시 및 내용 채우기
         function showDetailSheet(eventData) {
-            if (!detailSheet) return; // detailSheet가 정의되지 않았으면 실행 중단
+            if (!detailSheet) return;
 
             document.getElementById('sheet-title').textContent = eventData.name + ' (' + eventData.location + ')';
             document.getElementById('sheet-summary').textContent = eventData.summary;
             document.getElementById('sheet-celeb').textContent = eventData.celeb;
 
-            detailSheet.classList.add('active');
+            // 카테고리 태그 표시
+            const categoriesContainer = document.getElementById('sheet-categories');
+            categoriesContainer.innerHTML = '';
             
-            // 탭이 올라올 때 지도를 중앙 정렬
+            // 기본 카테고리
+            const categoryBadge = document.createElement('span');
+            categoryBadge.className = 'px-3 py-1 rounded-full text-sm font-semibold bg-primary-500 text-white';
+            categoryBadge.textContent = eventData.category;
+            categoriesContainer.appendChild(categoryBadge);
+
+            // 지역 뱃지
+            const regionBadge = document.createElement('span');
+            regionBadge.className = 'px-3 py-1 rounded-full text-sm font-semibold bg-blue-500 text-white';
+            regionBadge.textContent = eventData.region;
+            categoriesContainer.appendChild(regionBadge);
+
+            // 커스텀 라벨 표시
+            eventData.customLabels.forEach(label => {
+                const labelBadge = document.createElement('span');
+                labelBadge.className = 'px-3 py-1 rounded-full text-sm font-semibold bg-purple-500 text-white';
+                labelBadge.textContent = label;
+                categoriesContainer.appendChild(labelBadge);
+            });
+
+            detailSheet.classList.add('active');
             map.panTo([eventData.lat, eventData.lng]);
         }
 
-        // 6. 탭 닫기 (돌아가기) 기능
+        // 7. 탭 닫기 (돌아가기) 기능
         function hideDetailSheet() {
             if (detailSheet) {
                 detailSheet.classList.remove('active');
@@ -260,7 +470,6 @@
         }
 
         // 초기화
-        // Leaflet 스크립트가 바로 위에 있으므로, window.onload를 사용하여 DOM 로드 완료 후 실행합니다.
         window.onload = initializeMap;
         
     </script>
